@@ -179,7 +179,214 @@ ORDER BY create_ts DESC
 
 ### Step 11 — Produce the visualization
 
-Generate a complete standalone HTML page. Use only inline `<style>` — no external CSS or JS dependencies. The page must render correctly on its own when saved as an .html file.
+Copy the HTML template below exactly. Replace only the `{PLACEHOLDER}` tokens with real values from the data collected in Steps 1–10. Do not regenerate the CSS or structure — substitute values only.
+
+For `{PREREQ_NODES}`: for each prerequisite CPT code, output one node block and one arrow. Use class `red`, `amber`, or `green` based on claims result.
+For `{PREREQ_DETAIL_ROWS}`: one `<tr>` per prerequisite with CPT, description, rationale, and status badge.
+For `{CLAIMS_ROWS}`: one `<tr>` per claim found, or the empty-state row if none.
+For `{NOTE_CARDS}`: one `.note-card` div per clinical note.
+For `{AUTO_PILLS}`: one `.auto-pill` span per auto-approved CPT code.
+For `{ACTION_ITEMS}`: one `<li>` per RED/AMBER prerequisite describing what provider must submit.
+For `{ICD_ROWS}`: one `<tr>` per ICD-10 code.
+
+---
+
+#### HTML template (substitute placeholders only)
+
+```html
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prior Auth Review — {PA_NUMBER}</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#f0f2f5;color:#1a1d23;font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;line-height:1.6;padding-inline:16px}
+.page{max-width:860px;margin:0 auto;padding-bottom:48px}
+.topbar{background:#fff;border-bottom:3px solid #FF5F02;padding:11px 0;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
+.topbar-brand{font-family:'Courier New',monospace;font-size:13px;font-weight:500;color:#FF5F02;letter-spacing:.12em}
+.topbar-right{display:flex;align-items:center;gap:16px}
+.card{background:#fff;border:1px solid #e2e5ea;border-radius:8px;padding:20px 24px;margin-bottom:14px}
+.card-title{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.card-title::after{content:'';flex:1;height:1px;background:#f0f2f5}
+.header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #f0f2f5}
+.pa-num{font-family:'Courier New',monospace;font-size:21px;font-weight:500;color:#1a1d23}
+.pa-sub{font-size:12px;color:#9ca3af;margin-top:2px}
+.status-pill-red{display:inline-flex;align-items:center;gap:6px;border:1px solid #fca5a5;background:#fef2f2;color:#dc2626;border-radius:6px;padding:7px 16px;font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0;font-family:'Courier New',monospace}
+.status-pill-amber{display:inline-flex;align-items:center;gap:6px;border:1px solid #fcd34d;background:#fffbeb;color:#d97706;border-radius:6px;padding:7px 16px;font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0;font-family:'Courier New',monospace}
+.status-pill-green{display:inline-flex;align-items:center;gap:6px;border:1px solid #86efac;background:#f0fdf4;color:#16a34a;border-radius:6px;padding:7px 16px;font-size:12px;font-weight:600;white-space:nowrap;flex-shrink:0;font-family:'Courier New',monospace}
+.header-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 32px}
+.hfield label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9ca3af;display:block;margin-bottom:3px}
+.hfield-val{font-size:13px;color:#374151;font-weight:500}
+.hfield-sub{font-size:12px;color:#6b7280}
+.avatar-row{display:flex;align-items:center;gap:10px}
+.avatar{width:32px;height:32px;border-radius:50%;background:#f0f2f5;color:#FF5F02;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid #e2e5ea}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.tile{background:#fff;border:1px solid #e2e5ea;border-radius:8px;padding:14px 16px}
+.tile-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;margin-bottom:6px}
+.tile-val{font-size:24px;font-weight:600;font-family:'Courier New',monospace;color:#1a1d23}
+.tile-val.red{color:#dc2626}.tile-val.green{color:#16a34a}.tile-val.amber{color:#d97706}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;font-weight:600;text-align:left;padding:7px 10px;background:#fafbfc;border-bottom:1px solid #e2e5ea}
+.tbl td{padding:9px 10px;border-bottom:1px solid #f5f6f8;font-size:13px;color:#374151;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.seq{display:inline-flex;width:20px;height:20px;border-radius:50%;font-size:10px;font-weight:700;align-items:center;justify-content:center}
+.seq.primary{background:#FF5F02;color:#fff}.seq.secondary{background:#6b7280;color:#fff}
+.primary-tag{font-size:10px;background:#fff7ed;border:1px solid #fed7aa;color:#ea580c;border-radius:4px;padding:1px 6px;margin-left:6px;font-weight:500}
+.mono{font-family:'Courier New',monospace;font-size:12px}
+.journey{display:flex;align-items:flex-start;gap:0;overflow-x:auto;padding-bottom:4px}
+.journey-step{display:flex;flex-direction:column;align-items:center;min-width:148px}
+.step-node{border:2px solid;border-radius:8px;padding:12px 12px 10px;text-align:center;width:136px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.step-node.red{border-color:#fca5a5;background:#fef9f9}
+.step-node.amber{border-color:#fcd34d;background:#fffbeb}
+.step-node.green{border-color:#86efac;background:#f0fdf4}
+.step-node.goal{border-color:#fdba74;background:#fff7ed}
+.step-num{width:20px;height:20px;border-radius:50%;font-size:10px;font-weight:700;line-height:20px;text-align:center;flex-shrink:0}
+.step-node.red .step-num{background:#fca5a5;color:#dc2626}
+.step-node.amber .step-num{background:#fcd34d;color:#d97706}
+.step-node.green .step-num{background:#86efac;color:#16a34a}
+.step-node.goal .step-num{background:#fdba74;color:#ea580c}
+.step-cpt{font-family:'Courier New',monospace;font-size:13px;font-weight:500}
+.step-node.red .step-cpt{color:#dc2626}.step-node.amber .step-cpt{color:#d97706}
+.step-node.green .step-cpt{color:#16a34a}.step-node.goal .step-cpt{color:#FF5F02}
+.step-desc{font-size:11px;color:#6b7280;line-height:1.3}
+.step-status{font-size:11px;font-weight:600;margin-top:8px;text-align:center}
+.step-status.red{color:#dc2626}.step-status.green{color:#16a34a}
+.step-status.amber{color:#d97706}.step-status.goal{color:#9ca3af;font-weight:400}
+.journey-arrow{font-size:18px;color:#d1d5db;align-self:center;padding:0 4px;margin-top:-18px;flex-shrink:0}
+.prereq-detail{margin-top:16px;padding-top:14px;border-top:1px solid #f0f2f5}
+.badge{display:inline-flex;align-items:center;gap:4px;border-radius:6px;padding:3px 9px;font-size:11px;font-weight:600;border:1px solid;font-family:'Courier New',monospace}
+.badge.red{background:#fef2f2;border-color:#fca5a5;color:#dc2626}
+.badge.green{background:#f0fdf4;border-color:#86efac;color:#16a34a}
+.badge.amber{background:#fffbeb;border-color:#fcd34d;color:#d97706}
+.empty-cell{text-align:center;padding:20px!important;color:#9ca3af}
+.note-card{border:1px solid #e2e5ea;border-radius:6px;padding:14px 16px;margin-bottom:10px}
+.note-card:last-child{margin-bottom:0}
+.note-hdr{display:flex;align-items:center;margin-bottom:8px}
+.note-type{font-family:'Courier New',monospace;font-size:11px;font-weight:500;color:#FF5F02;text-transform:uppercase;letter-spacing:.06em}
+.note-date{font-size:11px;color:#9ca3af;margin-left:auto}
+.note-text{font-size:13px;color:#374151;line-height:1.6}
+.note-test{margin-top:8px;padding-top:8px;border-top:1px solid #f0f2f5;display:flex;gap:16px}
+.note-test-item label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#9ca3af;display:block;margin-bottom:2px}
+.note-test-item span{font-size:12px;color:#374151;font-weight:500}
+.auto-row{display:flex;flex-wrap:wrap;gap:8px}
+.auto-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid #86efac;background:#f0fdf4;border-radius:6px;padding:7px 12px;font-size:13px}
+.auto-code{font-family:'Courier New',monospace;font-weight:500;color:#16a34a;font-size:12px}
+.action-panel{border:1px solid #fecaca;border-left:3px solid #dc2626;background:#fff;border-radius:8px;padding:18px 22px;margin-bottom:14px}
+.action-heading{font-size:13px;font-weight:600;color:#dc2626;margin-bottom:12px}
+.action-list{list-style:none;display:flex;flex-direction:column;gap:8px}
+.action-list li{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:#374151}
+.action-list li::before{content:'→';color:#dc2626;flex-shrink:0;font-weight:700;margin-top:1px}
+.denial-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid #fee2e2}
+.denial-chip{border:1px solid #e2e5ea;border-radius:6px;padding:8px 14px;background:#fafbfc}
+.denial-code{font-family:'Courier New',monospace;font-size:15px;font-weight:600;color:#FF5F02}
+.denial-desc{font-size:11px;color:#6b7280;margin-top:2px;line-height:1.4;max-width:180px}
+.legend{display:flex;flex-wrap:wrap;gap:16px;padding-top:14px;border-top:1px solid #e2e5ea}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#9ca3af}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+@media(max-width:600px){.metrics{grid-template-columns:1fr 1fr}.header-grid{grid-template-columns:1fr}.journey{flex-direction:column;align-items:center}.journey-arrow{transform:rotate(90deg)}}
+</style></head><body>
+
+<div style="background:#fff;border-bottom:3px solid #FF5F02;padding:11px 16px;margin-bottom:0">
+  <div style="max-width:860px;margin:0 auto;display:flex;align-items:center;justify-content:space-between">
+    <span style="font-family:'Courier New',monospace;font-size:13px;font-weight:500;color:#FF5F02;letter-spacing:.12em">TERADATA</span>
+    <div style="display:flex;align-items:center;gap:16px">
+      <span style="font-size:12px;color:#6b7280">AI Studio · Prior Auth Review</span>
+      <span style="font-family:'Courier New',monospace;font-size:11px;color:#9ca3af">Generated {GENERATED_DATE}</span>
+    </div>
+  </div>
+</div>
+
+<div class="page" style="padding-top:20px">
+
+  <div class="card">
+    <div class="header-top">
+      <div>
+        <div class="pa-num">{PA_NUMBER}</div>
+        <div class="pa-sub">Auth Status: {AUTH_STATUS} · Submitted {SUBMITTED_DATE}</div>
+      </div>
+      {STATUS_PILL}
+    </div>
+    <div class="header-grid">
+      <div class="hfield"><label>Member</label>
+        <div class="avatar-row"><div class="avatar">{MEMBER_INITIALS}</div>
+        <div><div class="hfield-val">{MEMBER_NAME}</div><div class="hfield-sub">{MEMBER_ID} · {GENDER}</div></div></div>
+      </div>
+      <div class="hfield"><label>Ordering Provider</label>
+        <div class="avatar-row"><div class="avatar">{PROVIDER_INITIALS}</div>
+        <div><div class="hfield-val">{PROVIDER_NAME}</div><div class="hfield-sub">{PRIMARY_SPECIALTY} · NPI {NPI}</div></div></div>
+      </div>
+      <div class="hfield"><label>Requested Date of Service</label>
+        <div class="hfield-val">{REQUESTED_DOS}</div></div>
+      <div class="hfield"><label>Auth Request ID</label>
+        <div class="hfield-val mono">{AUTH_REQUEST_ID}</div>
+        <div class="hfield-sub">Created {CREATED_DATE}</div></div>
+    </div>
+  </div>
+
+  <div class="metrics">
+    <div class="tile"><div class="tile-label">CPT Codes Requested</div><div class="tile-val">{CPT_COUNT}</div></div>
+    <div class="tile"><div class="tile-label">Prerequisites Required</div><div class="tile-val">{PREREQ_COUNT}</div></div>
+    <div class="tile"><div class="tile-label">Prerequisites Satisfied</div><div class="tile-val {SATISFIED_COLOR}">{SATISFIED_RATIO}</div></div>
+    <div class="tile"><div class="tile-label">Claims Found</div><div class="tile-val {CLAIMS_COLOR}">{CLAIMS_COUNT}</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">ICD-10 Diagnoses</div>
+    <table class="tbl">
+      <thead><tr><th>Seq</th><th>ICD-10 Code</th><th>Description</th><th>Type</th></tr></thead>
+      <tbody>{ICD_ROWS}</tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Care Pathway Journey — CPT {JOURNEY_CPT_CODE}</div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:16px">The following prerequisite treatments must be documented before authorization can proceed.</div>
+    <div class="journey">{PREREQ_NODES}</div>
+    <div class="prereq-detail">
+      <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;font-weight:600;margin-bottom:10px">Prerequisite Detail</div>
+      <table class="tbl">
+        <thead><tr><th>CPT</th><th>Name</th><th>Clinical Rationale</th><th>Status</th></tr></thead>
+        <tbody>{PREREQ_DETAIL_ROWS}</tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Claims History</div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:12px">Searched WORKERS_COMP_HDR/DTL for member <span class="mono">{MEMBER_ID}</span> with service date before <span class="mono">{REQUESTED_DOS}</span>. Prerequisites searched: {SEARCHED_CODES}</div>
+    <table class="tbl">
+      <thead><tr><th>Bill ID</th><th>Service Date</th><th>CPT Billed</th><th>CPT Paid</th><th>Rendering Provider</th></tr></thead>
+      <tbody>{CLAIMS_ROWS}</tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Clinical Notes</div>
+    {NOTE_CARDS}
+  </div>
+
+  <div class="card">
+    <div class="card-title">Auto-Approved — No Prerequisites Required</div>
+    <div class="auto-row">{AUTO_PILLS}</div>
+  </div>
+
+  <div class="action-panel">
+    <div class="action-heading">⚠ Documentation Required — Provider Action Needed</div>
+    <ul class="action-list">{ACTION_ITEMS}</ul>
+    <div class="denial-row">
+      <div class="denial-chip"><div class="denial-code">44</div><div class="denial-desc">Documentation of conservative treatment failure required</div></div>
+      <div class="denial-chip"><div class="denial-code">0F</div><div class="denial-desc">Not medically necessary per submitted information</div></div>
+      <div class="denial-chip"><div class="denial-code">0U</div><div class="denial-desc">Additional patient information required — please resubmit</div></div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="dot" style="background:#16a34a"></div>GREEN — Prerequisite satisfied in claims history</div>
+    <div class="legend-item"><div class="dot" style="background:#d97706"></div>AMBER — Documented in request, no claim found</div>
+    <div class="legend-item"><div class="dot" style="background:#dc2626"></div>RED — Not found; provider must submit documentation</div>
+  </div>
+
+</div></body></html>
+```
 
 ---
 
