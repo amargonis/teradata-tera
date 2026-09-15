@@ -203,93 +203,98 @@ Use `font-family: 'Segoe UI', system-ui, sans-serif` for body text and `font-fam
 
 ---
 
-#### Page structure — render these sections in order:
+#### Page structure — render these 10 sections in order (max-width 860px centered):
 
-**A. Top bar**
-- Full-width bar, background `#ffffff`, `border-bottom: 3px solid #FF5F02`, padding 12px 24px
-- Left: "TERADATA" in `#FF5F02`, bold monospace, letter-spacing .12em, font-size 13px
-- Right: "AI Studio · Prior Auth Review" in `#6b7280`, font-size 12px
+Use `font-family: 'Segoe UI', system-ui, sans-serif` for body and `font-family: 'Courier New', monospace` for codes, PA numbers, and metric values. Light background only — do NOT use dark backgrounds.
 
-**B. Header card**
-- Background `--surface`, border `1px solid --border`, border-radius 10px, padding 24px, margin 20px auto, max-width 800px
-- Top row: PA number in `--orange` bold large (22px), and a status pill on the right:
-  - RED pill (`background: --red-bg`, `border: 1px solid --red`, `color: --red`) with text "⛔ PEND" if any RED
-  - AMBER pill with "⚠ PEND" if only AMBER
-  - GREEN pill with "✓ APPROVED" if all GREEN
-- Below that: a 2-column grid of label/value pairs:
-  - Member: `{first_name} {last_name}` · `{member_id_num}` · `{gender}`
-  - Provider: `Dr. {last_name}, {credential}` · `{primary_specialty}`
-  - Requested DOS: `{requested_dos}`
-  - ICD-10: comma-separated list of icd_code values
-- Member and provider initials shown as colored circular avatars (2-letter initials, `background: #2e3550`, `color: --coral`)
+**A. Top bar** — white bg, `border-bottom: 3px solid #FF5F02`, padding 11px 16px. Left: "TERADATA" in `#FF5F02` monospace. Right: "AI Studio · Prior Auth Review" in `#6b7280` + generated timestamp in `#9ca3af` monospace.
 
-**C. Metrics strip**
-- 4 equal tiles in a row (flex, gap 12px), each `background: --surface2`, border-radius 8px, padding 16px 20px, margin 0 auto 20px, max-width 800px
-- Tile 1 — "CPT CODES REQUESTED" / big number
-- Tile 2 — "PREREQUISITES REQUIRED" / big number
-- Tile 3 — "PREREQUISITES SATISFIED" / `{n} of {total}` in GREEN if all satisfied, RED if 0, AMBER otherwise
-- Tile 4 — "OVERALL STATUS" / "PEND" in RED or "APPROVED" in GREEN (large, bold)
-- Label: `--muted`, 10px, uppercase, letter-spacing .1em. Number: 28px bold, `--text`
+**B. Header card** — white, `border: 1px solid #e2e5ea`, border-radius 8px, padding 20px 24px.
+- Top row: PA number monospace 21px + "Auth Status: Pending Review" sub-label; status pill right-aligned:
+  - RED: `bg:#fef2f2 border:#fca5a5 color:#dc2626` "⛔ PEND — Gaps Found"
+  - AMBER: `bg:#fffbeb border:#fcd34d color:#d97706` "⚠ PEND — Partial"
+  - GREEN: `bg:#f0fdf4 border:#86efac color:#16a34a` "✓ APPROVED"
+- 2-column grid: Member (avatar initials + name + member_id_num + gender) · Provider (avatar + Dr. name + credential + primary_specialty + NPI) · Requested DOS + days since submission · Auth Request ID + created date
 
-**D. Care Pathway Gap Analysis section**
-- Section header: `--coral`, bold, 13px uppercase, letter-spacing .1em, with a 2px `--orange` left border, padding-left 12px, margin 0 auto 14px, max-width 800px
-- One card per CPT code that HAS prerequisites (`background: --surface`, border-radius 10px, border `1px solid --border`, max-width 800px, margin 0 auto 16px):
-  - Card header row: CPT code in `--coral` monospace bold, description in `--text`, and a right-side pill showing prerequisite count (e.g. "2 prerequisites")
-  - **Care pathway flow** — render the prerequisite chain as a visual horizontal sequence:
-    - Each prerequisite is a node: rounded box, border color = status color, label = CPT code + short description
-    - Between nodes: `→` arrow in `--muted`
-    - After last prerequisite: `→` then the requested CPT code node in `--orange` border (the goal)
-    - Below each prerequisite node: status badge (RED/AMBER/GREEN pill) + evidence text
-      - GREEN: "✓ Claim: {date} · {provider}" in `--green`
-      - AMBER: "⚠ Documented in request — no claim" in `--amber`
-      - RED: "✗ Not found in claims history" in `--red`
-  - If the flow wraps on narrow screens, stack nodes vertically with `↓` arrows
+**C. Metrics strip** — 4-column grid, white tiles, `border: 1px solid #e2e5ea`, border-radius 8px, padding 14px 16px.
+- Tile 1: "CPT CODES REQUESTED" / count
+- Tile 2: "PREREQUISITES REQUIRED" / count
+- Tile 3: "PREREQUISITES SATISFIED" / `{n} / {total}` — RED if 0, GREEN if complete, AMBER if partial
+- Tile 4: "CLAIMS FOUND" / count — RED if 0
+- Labels 10px uppercase `#9ca3af`. Values 24px monospace bold.
 
-**E. Auto-Approved section**
-- Section header same style as D
-- Horizontal flex row of small green pills, each: CPT code + short description, `border: 1px solid --green`, `background: --green-bg`, `color: --green`, border-radius 20px, padding 6px 14px, font-size 13px
+**D. ICD-10 Diagnoses card** — table: Seq (filled circle, orange=primary gray=secondary) · ICD-10 Code (monospace) · Full Description · Type ("Primary" orange badge or "Secondary" gray text).
 
-**F. Action Required panel** (only if any RED or AMBER)
-- Full-width card, `border-left: 4px solid --red` (or `--amber` if no RED), `background: --surface2`, border-radius 8px, padding 20px 24px, max-width 800px, margin 0 auto 20px
-- Heading: "Documentation Required" in `--red` or `--amber`
-- Bullet list of what the provider must submit for each RED/AMBER prerequisite
-- Applicable denial codes in a small monospace row: `44 · 0F · 0U` each in a grey pill with tooltip-style description below
+**E. Care Pathway Journey card** (one per CPT code with prerequisites) — title "CARE PATHWAY JOURNEY — CPT {code}".
+- Intro: "The following prerequisite treatments must be documented before authorization can proceed."
+- Horizontal node flow separated by `→` arrows (`#d1d5db`):
+  - Prerequisite nodes: `border: 2px solid {status-color}`, status bg, border-radius 8px, width 136px. Inside box (top→bottom): step number circle · CPT code monospace bold · short description `#6b7280`. Below box: status text (RED "✗ Not in claims" · GREEN "✓ Claim: {date} · {provider}" · AMBER "⚠ Documented").
+  - Goal node: `border: 2px solid #fdba74`, `bg:#fff7ed`, star marker, CPT in `#FF5F02`, "Authorization goal" below.
+- Prerequisite Detail table below flow: CPT code · Name · Clinical rationale · Status badge (colored pill).
 
-**G. Legend strip**
-- Small horizontal row at bottom of the 800px container
-- Three items: `● GREEN — Prerequisite satisfied in claims`, `● AMBER — Documented, no claim`, `● RED — Not found, documentation required`
-- Font-size 11px, `--muted`, monospace dots colored accordingly
+**F. Claims History card** — title "CLAIMS HISTORY".
+- Sub-text: searched member `{member_id_num}` for `{prereq_codes}` before `{requested_dos}`.
+- Table: Bill ID · Service Date · CPT Billed · CPT Paid · Rendering Provider · Status.
+- If empty: centered "No claims found for this member" with explanation note.
+
+**G. Clinical Notes card** — title "CLINICAL NOTES". One sub-card per note:
+- Header: note_type in `#FF5F02` monospace uppercase + note_date right-aligned `#9ca3af`.
+- Body: note_text. If prior_test_name not null: add test name + result row.
+
+**H. Auto-Approved section** — title "AUTO-APPROVED — NO PREREQUISITES REQUIRED". Green pills: `border:1px solid #86efac bg:#f0fdf4`, border-radius 6px — CPT code in `#16a34a` monospace + description.
+
+**I. Action Required panel** (only if RED or AMBER) — `border:1px solid #fecaca border-left:3px solid #dc2626`, white bg, border-radius 8px.
+- Heading "⚠ Documentation Required — Provider Action Needed" in `#dc2626`.
+- Bulleted list (→ red prefix) — one item per RED/AMBER prerequisite with specific submission instructions.
+- Denial code chips: 44 (Documentation of conservative treatment failure required) · 0F (Not medically necessary) · 0U (Additional patient information required).
+
+**J. Legend** — `border-top: 1px solid #e2e5ea`, 11px `#9ca3af`. Three colored dots: GREEN · AMBER · RED with descriptions.
 
 ---
 
-#### Full example structure (for PA-2026-003417):
+#### Full example output (PA-2026-003417):
 
 ```
-[Teradata orange top bar]
+[White top bar — orange bottom border]
+  TERADATA                    AI Studio · Prior Auth Review    Generated 2026-03-20 09:14
 
 [Header card]
-  PA-2026-003417                              [⛔ PEND]
-  Member:   Robert Martinez · MBR-884201 · Male
-  Provider: Dr. Chen, MD · Orthopedic Surgery
-  DOS:      2026-03-25
-  ICD-10:   S43.431A, M25.511
+  PA-2026-003417  ·  Auth Status: Pending Review              [⛔ PEND — Gaps Found]
+  [RM] Robert Martinez · MBR-884201 · Male
+  [SC] Dr. Sarah Chen, MD · Orthopedic Surgery · NPI 1234567890
+  DOS: 2026-03-25   Auth Request ID: 1
 
-[Metrics strip]
-  CPT Codes: 4  |  Prerequisites Required: 2  |  Satisfied: 0 of 2 (RED)  |  Status: PEND
+[Metrics: 4 tiles]
+  CPT Codes: 4  |  Prerequisites Required: 2  |  Satisfied: 0/2 (RED)  |  Claims Found: 0 (RED)
 
-[Section: Care Pathway Gap Analysis]
-  [CPT 73223 card — MRI Upper Extremity Joint]
-    [Flow: 97001 PT Eval] → [97110 Therapeutic Ex] → [73223 MRI ★]
-               ✗ RED                    ✗ RED              (goal)
+[ICD-10 Diagnoses]
+  ① S43.431A — Superior glenoid labrum lesion right shoulder [Primary]
+  ② M25.511  — Pain in right shoulder
 
-[Section: Auto-Approved Codes]
-  [✓ 77002]  [✓ 23350]  [✓ 20610]
+[Care Pathway Journey — CPT 73223]
+  [① 97001 PT Evaluation] → [② 97110 Therapeutic Exercises] → [★ 73223 MRI goal]
+     ✗ Not in claims           ✗ Not in claims
+  Detail: 97001 · PT Evaluation · Baseline required [✗ Missing]
+          97110 · Therapeutic Exercises · 6-week course required [✗ Missing]
 
-[Action Required panel — red border]
-  Provider must submit: PT evaluation records (97001), Therapeutic exercise records (97110)
-  Denial codes: 44 · 0F · 0U
+[Claims History]
+  No claims found for MBR-884201 (searched 97001, 97110 before 2026-03-25)
 
-[Legend]
+[Clinical Notes]
+  PHYSICIAN NOTE  2026-03-19
+  Patient presents with right shoulder pain and limited ROM...
+  PRIOR TEST RESULT  2026-03-15
+  X-ray right shoulder — no acute fracture
+
+[Auto-Approved]
+  [✓ 77002 Fluoroscopic Guidance]  [✓ 23350 Injection Shoulder]  [✓ 20610 Arthrocentesis]
+
+[Action Required — red left border]
+  → Submit PT evaluation records (97001): dates, therapist notes, functional baseline
+  → Submit therapeutic exercise records (97110): frequency, 6-week duration, outcomes
+  [44] [0F] [0U]
+
+[Legend: ● GREEN ● AMBER ● RED]
 ```
 
 ---
