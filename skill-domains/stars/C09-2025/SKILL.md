@@ -1,5 +1,5 @@
 ---
-name: stars-c09
+name: stars-c09-2025
 description: >-
   STARS measure C09 (Eye Exam to Check for Damage from Diabetes), measurement year 2025. Trigger when the user asks about
   C09 or "Eye Exam to Check for Damage from Diabetes", e.g. "what is our C09 rate", "C09 star rating", "show C09 care gaps",
@@ -16,7 +16,7 @@ Percent of plan members with diabetes who had an eye exam to check for damage fr
 - **Measurement year:** 2025
 - **Customer data:** database `DEMO_HealthcareSynthea` (customer id `DEMO_HealthcareSynthea`); reference database `HCLS`
 - **Source tables:** `DEMO_HealthcareSynthea.conditions`, `DEMO_HealthcareSynthea.encounters`, `DEMO_HealthcareSynthea.observations`, `DEMO_HealthcareSynthea.patients`, `DEMO_HealthcareSynthea.payer_transitions`, `DEMO_HealthcareSynthea.payers`, `DEMO_HealthcareSynthea.procedures`, `HCLS.measure_value_set_codes`
-- **Exported:** 2026-10-26 20:27 UTC from the Star Ratings measure automation app. The SQL below was generated, validated with Teradata `EXPLAIN`, and approved by a human reviewer.
+- **Exported:** 2026-10-26 20:52 UTC from the Star Ratings measure automation app. The SQL below was generated, validated with Teradata `EXPLAIN`, and approved by a human reviewer.
 
 ## How to use this skill
 

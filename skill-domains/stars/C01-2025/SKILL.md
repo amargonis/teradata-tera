@@ -1,5 +1,5 @@
 ---
-name: stars-c01
+name: stars-c01-2025
 description: >-
   STARS measure C01 (Breast Cancer Screening), measurement year 2025. Trigger when the user asks about
   C01 or "Breast Cancer Screening", e.g. "what is our C01 rate", "C01 star rating", "show C01 care gaps",
@@ -16,7 +16,7 @@ Percent of female Medicare Advantage enrollees who had a mammogram to screen for
 - **Measurement year:** 2025
 - **Customer data:** database `DEMO_HealthcareSynthea` (customer id `DEMO_HealthcareSynthea`); reference database `HCLS`
 - **Source tables:** `DEMO_HealthcareSynthea.conditions`, `DEMO_HealthcareSynthea.observations`, `DEMO_HealthcareSynthea.patients`, `DEMO_HealthcareSynthea.payer_transitions`, `DEMO_HealthcareSynthea.payers`, `DEMO_HealthcareSynthea.procedures`, `HCLS.measure_value_set_codes`
-- **Exported:** 2026-10-26 20:27 UTC from the Star Ratings measure automation app. The SQL below was generated, validated with Teradata `EXPLAIN`, and approved by a human reviewer.
+- **Exported:** 2026-10-26 20:52 UTC from the Star Ratings measure automation app. The SQL below was generated, validated with Teradata `EXPLAIN`, and approved by a human reviewer.
 
 ## How to use this skill
 

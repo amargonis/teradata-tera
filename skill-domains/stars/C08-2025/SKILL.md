@@ -1,5 +1,5 @@
 ---
-name: stars-c08
+name: stars-c08-2025
 description: >-
   STARS measure C08 (Osteoporosis Management), measurement year 2025. Trigger when the user asks about
   C08 or "Osteoporosis Management", e.g. "what is our C08 rate", "C08 star rating", "show C08 care gaps",
@@ -16,7 +16,7 @@ Percent of female plan members who broke a bone and got screening or treatment f
 - **Measurement year:** 2025
 - **Customer data:** database `DEMO_HealthcareSynthea` (customer id `DEMO_HealthcareSynthea`); reference database `HCLS`
 - **Source tables:** `DEMO_HealthcareSynthea.conditions`, `DEMO_HealthcareSynthea.encounters`, `DEMO_HealthcareSynthea.medications`, `DEMO_HealthcareSynthea.patients`, `DEMO_HealthcareSynthea.payer_transitions`, `DEMO_HealthcareSynthea.payers`, `DEMO_HealthcareSynthea.procedures`, `HCLS.measure_value_set_codes`
-- **Exported:** 2026-10-26 20:27 UTC from the Star Ratings measure automation app. The SQL below was generated, validated with Teradata `EXPLAIN`, and approved by a human reviewer.
+- **Exported:** 2026-10-26 20:52 UTC from the Star Ratings measure automation app. The SQL below was generated, validated with Teradata `EXPLAIN`, and approved by a human reviewer.
 
 ## How to use this skill
 
