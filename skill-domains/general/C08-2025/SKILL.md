@@ -311,7 +311,7 @@ Running this as-is reproduces the certified population: one row per denominator 
 WITH
 CTE_00_IESD AS (
     SELECT
-        TRIM(c.patient_id)      AS patient_id
+        c.patient_id      AS patient_id
         ,MIN(c.start_date)      AS iesd
     FROM HEALTHCARE_EHR.conditions c
     WHERE c.code_system = 'SNOMED-CT'
@@ -322,12 +322,12 @@ CTE_00_IESD AS (
               AND measurement_year = 2025)
       AND c.start_date BETWEEN DATE '2024-07-01' AND DATE '2025-06-30'
       -- [Spec2:DENOM_EVENT:DOMAIN_GAP:CODE_SYSTEM] [AE-02] blocking gap — 0 rows expected today
-    GROUP BY TRIM(c.patient_id)
+    GROUP BY c.patient_id
 )
 
 ,CTE_01_MEMBERS AS (
     SELECT DISTINCT
-        TRIM(p.patient_id)   AS patient_id                        -- [SN-03]
+        p.patient_id   AS patient_id                        -- [SN-03]
         ,p.birth_date
         ,p.gender
         ,p.death_date
@@ -340,7 +340,7 @@ CTE_00_IESD AS (
         ,f.iesd
     FROM HEALTHCARE_EHR.patients p
     INNER JOIN CTE_00_IESD f
-        ON TRIM(p.patient_id) = f.patient_id                        -- [Spec2:DENOM_EVENT:DOMAIN_GAP]
+        ON p.patient_id = f.patient_id                        -- [Spec2:DENOM_EVENT:DOMAIN_GAP]
     WHERE p.gender = 'F'                                            -- [Spec2:DENOM_GENDER:MAPPED]
       AND (EXTRACT(YEAR FROM DATE '2025-12-31')
            - EXTRACT(YEAR FROM p.birth_date)) BETWEEN 67 AND 85     -- [Spec2:DENOM_AGE:MAPPED]
@@ -350,12 +350,12 @@ CTE_00_IESD AS (
 
 ,CTE_ENROLLMENT_SEGMENTS AS (
     SELECT DISTINCT
-        TRIM(pt.patient_id)                                              AS patient_id
+        pt.patient_id                                              AS patient_id
         ,m.iesd
         ,CAST(CAST(pt.start_year AS VARCHAR(4)) || '-01-01' AS DATE)     AS seg_start   -- [SN-02] start_year/end_year are INTEGER year values, not TIMESTAMP/DATE
         ,CAST(CAST(pt.end_year   AS VARCHAR(4)) || '-12-31' AS DATE)     AS seg_end     -- [SN-02]
     FROM HEALTHCARE_EHR.payer_transitions pt
-    INNER JOIN CTE_01_MEMBERS m ON TRIM(pt.patient_id) = m.patient_id
+    INNER JOIN CTE_01_MEMBERS m ON pt.patient_id = m.patient_id
     INNER JOIN HEALTHCARE_EHR.payers py ON TRIM(pt.primary_payer_id) = TRIM(py.payer_id)  -- [SN-03]
     WHERE py.payer_type = 'GOVERNMENT'                               -- [Spec2:DENOM_PLAN_TYPE:PROXY]
       AND py.payer IN ('Medicare', 'Dual Eligible')
@@ -383,7 +383,7 @@ CTE_00_IESD AS (
 )
 
 ,CTE_02_ENROLLED AS (
-    SELECT DISTINCT TRIM(patient_id) AS patient_id                   -- [Spec2:DENOM_ENROLL:PROXY]
+    SELECT DISTINCT patient_id AS patient_id                   -- [Spec2:DENOM_ENROLL:PROXY]
     FROM CTE_ENROLLMENT_CHECK
     WHERE earliest_start <= iesd
       AND latest_end >= (iesd + 180)
@@ -415,7 +415,7 @@ CTE_00_IESD AS (
     FROM CTE_03_DENOMINATOR d
     WHERE NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.procedures pb
-        WHERE TRIM(pb.patient_id) = d.patient_id
+        WHERE pb.patient_id = d.patient_id
           AND pb.code_system = 'SNOMED-CT'
           AND TRIM(pb.code) IN (
                 SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
@@ -426,7 +426,7 @@ CTE_00_IESD AS (
     )   -- [Spec2:EXCL_PRIOR_BMD:DOMAIN_GAP:CODE_SYSTEM]
       AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.encounters ec
-        WHERE TRIM(ec.patient_id) = d.patient_id
+        WHERE ec.patient_id = d.patient_id
           AND TRIM(ec.code) IN (
                 SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
                 WHERE value_set_oid = 'OSTEO_MED_VALUE_SET_OID_PENDING_CONFIRMATION'
@@ -436,7 +436,7 @@ CTE_00_IESD AS (
     )   -- [Spec2:EXCL_PRIOR_OSTEO_CLAIM:DOMAIN_GAP:CODE_SYSTEM]
       AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.medications mx
-        WHERE TRIM(mx.patient_id) = d.patient_id
+        WHERE mx.patient_id = d.patient_id
           AND TRIM(mx.code) IN (
                 SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
                 WHERE value_set_oid = 'OSTEO_MED_VALUE_SET_OID_PENDING_CONFIRMATION'
@@ -445,7 +445,7 @@ CTE_00_IESD AS (
     )   -- [Spec2:EXCL_PRIOR_OSTEO_RX:DOMAIN_GAP:CODE_SYSTEM]
       AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.encounters eh
-        WHERE TRIM(eh.patient_id) = d.patient_id
+        WHERE eh.patient_id = d.patient_id
           AND TRIM(eh.code) IN (
                 SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
                 WHERE value_set_oid IN ('2.16.840.1.113883.3.464.1004.1761','2.16.840.1.113883.3.464.1004.1762')
@@ -457,7 +457,7 @@ CTE_00_IESD AS (
            OR d.death_date NOT BETWEEN DATE '2025-01-01' AND DATE '2025-12-31')   -- [Spec2:EXCL_DEATH:MAPPED]
       AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.conditions cp
-        WHERE TRIM(cp.patient_id) = d.patient_id
+        WHERE cp.patient_id = d.patient_id
           AND TRIM(cp.code) IN (
                 SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
                 WHERE value_set_oid IN ('2.16.840.1.113883.3.464.1004.2225','2.16.840.1.113883.3.464.1004.1450','2.16.840.1.113883.3.464.1004.2224')
@@ -470,7 +470,7 @@ CTE_00_IESD AS (
         AND (
             SELECT COUNT(DISTINCT c.start_date)
             FROM HEALTHCARE_EHR.conditions c
-            WHERE TRIM(c.patient_id) = d.patient_id
+            WHERE c.patient_id = d.patient_id
               AND TRIM(c.code) IN (
                     SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
                     WHERE value_set_oid IN ('2.16.840.1.113883.3.464.1004.1530','2.16.840.1.113883.3.464.1004.1531',
@@ -482,7 +482,7 @@ CTE_00_IESD AS (
         AND (
             EXISTS (
                 SELECT 1 FROM HEALTHCARE_EHR.encounters ai
-                WHERE TRIM(ai.patient_id) = d.patient_id
+                WHERE ai.patient_id = d.patient_id
                   AND TRIM(ai.code) IN (
                         SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
                         WHERE value_set_oid = '2.16.840.1.113883.3.464.1004.1810'
@@ -490,7 +490,7 @@ CTE_00_IESD AS (
                           AND measurement_year = 2025)
                   AND EXISTS (
                         SELECT 1 FROM HEALTHCARE_EHR.conditions aidx
-                        WHERE TRIM(aidx.patient_id) = d.patient_id
+                        WHERE aidx.patient_id = d.patient_id
                           AND TRIM(aidx.code) IN (
                                 SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
                                 WHERE value_set_oid = '2.16.840.1.113883.3.464.1004.1465'
@@ -502,7 +502,7 @@ CTE_00_IESD AS (
             OR (
                 SELECT COUNT(DISTINCT CAST(v.start_ts AT TIME ZONE 'GMT' AS DATE))
                 FROM HEALTHCARE_EHR.encounters v
-                WHERE TRIM(v.patient_id) = d.patient_id
+                WHERE v.patient_id = d.patient_id
                   AND TRIM(v.code) IN (
                         SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
                         WHERE value_set_oid = '2.16.840.1.113883.3.464.1004.2474'
@@ -510,7 +510,7 @@ CTE_00_IESD AS (
                           AND measurement_year = 2025)
                   AND EXISTS (
                         SELECT 1 FROM HEALTHCARE_EHR.conditions vdx
-                        WHERE TRIM(vdx.patient_id) = d.patient_id
+                        WHERE vdx.patient_id = d.patient_id
                           AND TRIM(vdx.code) IN (
                                 SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
                                 WHERE value_set_oid = '2.16.840.1.113883.3.464.1004.1465'
@@ -526,7 +526,7 @@ CTE_00_IESD AS (
         AND (
             SELECT COUNT(DISTINCT c81.start_date)
             FROM HEALTHCARE_EHR.conditions c81
-            WHERE TRIM(c81.patient_id) = d.patient_id
+            WHERE c81.patient_id = d.patient_id
               AND TRIM(c81.code) IN (
                     SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
                     WHERE value_set_oid IN ('2.16.840.1.113883.3.464.1004.1530','2.16.840.1.113883.3.464.1004.1531',
@@ -539,9 +539,9 @@ CTE_00_IESD AS (
 )
 
 ,CTE_BMD_EVENTS AS (
-    SELECT DISTINCT TRIM(pr.patient_id) AS patient_id
+    SELECT DISTINCT pr.patient_id AS patient_id
     FROM HEALTHCARE_EHR.procedures pr
-    INNER JOIN CTE_04_EXCLUSIONS d ON TRIM(pr.patient_id) = d.patient_id
+    INNER JOIN CTE_04_EXCLUSIONS d ON pr.patient_id = d.patient_id
     WHERE pr.code_system = 'SNOMED-CT'
       AND TRIM(pr.code) IN (
             SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
@@ -552,9 +552,9 @@ CTE_00_IESD AS (
 )   -- [Spec2:NUM_BMD_TEST:DOMAIN_GAP:CODE_SYSTEM]
 
 ,CTE_OSTEO_RX_EVENTS AS (
-    SELECT DISTINCT TRIM(mx.patient_id) AS patient_id
+    SELECT DISTINCT mx.patient_id AS patient_id
     FROM HEALTHCARE_EHR.medications mx
-    INNER JOIN CTE_04_EXCLUSIONS d ON TRIM(mx.patient_id) = d.patient_id
+    INNER JOIN CTE_04_EXCLUSIONS d ON mx.patient_id = d.patient_id
     WHERE TRIM(mx.code) IN (
             SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
             WHERE value_set_oid = 'OSTEO_MED_VALUE_SET_OID_PENDING_CONFIRMATION'
@@ -575,7 +575,7 @@ CTE_00_IESD AS (
 
 ,CTE_06_RESULT AS (
     SELECT
-        TRIM(n.patient_id) AS member_id
+        n.patient_id AS member_id
         ,CASE WHEN n.in_numerator IS NULL THEN 0 ELSE n.in_numerator END AS in_numerator
     FROM CTE_05_NUMERATOR n
 )
@@ -646,7 +646,8 @@ Example questions this supports:
 - `CASE WHEN EXISTS (...)` is illegal (error 3771). Use a `LEFT JOIN` and test `IS NOT NULL`.
 - `AT TIME ZONE` is valid only on TIMESTAMP columns (`*_ts`): `CAST(col AT TIME ZONE 'GMT' AS DATE)`. DATE columns (`*_date`) compare directly (error 5407).
 - `NTILE` is not supported. Use `CASE WHEN` bands or `QUANTILE(n, col)`.
-- Wrap rate denominators in `NULLIFZERO()`; `TRIM()` every join key; no `ORDER BY` inside CTEs.
+- Wrap rate denominators in `NULLIFZERO()`; no `ORDER BY` inside CTEs.
+- `patient_id` and `encounter_id` are stored trimmed: join and filter on them directly, never `TRIM()` them (a function on the key defeats the primary index / row-hash join). Other keys and codes (payer_id, code, ...) are still wrapped in `TRIM()` in joins.
 - Do not use reserved words as aliases or output names (`value`, `year`, `month`, `day`, `level`, `rank`, `row`, `type`, `count`, `zone`, `title`, `summary`, `lt`, `gt`, `eq`, `in`, `is`, ...). Use `member_count`, `age_band`, etc.
 - Dates in the certified SQL are literals for the measurement year; keep them when reusing the spine.
 

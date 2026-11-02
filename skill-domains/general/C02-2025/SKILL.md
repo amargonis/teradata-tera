@@ -322,7 +322,7 @@ Running this as-is reproduces the certified population: one row per denominator 
 WITH
 CTE_01_MEMBERS AS (
     SELECT DISTINCT
-        TRIM(patients.patient_id)          AS patient_id
+        patients.patient_id          AS patient_id
         ,patients.birth_date
         ,patients.death_date
     FROM HEALTHCARE_EHR.patients patients
@@ -335,12 +335,12 @@ CTE_01_MEMBERS AS (
     SELECT seg.patient_id
     FROM (
         SELECT
-            TRIM(pt.patient_id)                                     AS patient_id
+            pt.patient_id                                     AS patient_id
             ,CAST(pt.start_year AT TIME ZONE 'GMT' AS DATE)         AS seg_start
             ,CAST(pt.end_year   AT TIME ZONE 'GMT' AS DATE)         AS seg_end
             ,CAST(pt.start_year AT TIME ZONE 'GMT' AS DATE)
                - LAG(CAST(pt.end_year AT TIME ZONE 'GMT' AS DATE))
-                 OVER (PARTITION BY TRIM(pt.patient_id)
+                 OVER (PARTITION BY pt.patient_id
                        ORDER BY CAST(pt.start_year AT TIME ZONE 'GMT' AS DATE)) AS gap_days
         FROM HEALTHCARE_EHR.payer_transitions pt
         INNER JOIN HEALTHCARE_EHR.payers py
@@ -362,7 +362,7 @@ CTE_01_MEMBERS AS (
         ,(EXTRACT(YEAR FROM DATE '2025-12-31') - EXTRACT(YEAR FROM m.birth_date)) AS age_at_anchor
     FROM CTE_01_MEMBERS m
     INNER JOIN CTE_02_ENROLLED e
-        ON TRIM(m.patient_id) = TRIM(e.patient_id)
+        ON m.patient_id = e.patient_id
 )
 
 ,CTE_04_EXCLUSIONS AS (
@@ -373,7 +373,7 @@ CTE_01_MEMBERS AS (
     WHERE NOT EXISTS (
         SELECT 1
         FROM HEALTHCARE_EHR.encounters e
-        WHERE TRIM(e.patient_id) = TRIM(d.patient_id)                  -- [SN-06]
+        WHERE e.patient_id = d.patient_id                  -- [SN-06]
           AND e.encounter_class = 'hospice'
           AND CAST(e.start_ts AT TIME ZONE 'GMT' AS DATE)
                 BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'        -- [SN-05]
@@ -387,7 +387,7 @@ CTE_01_MEMBERS AS (
           ON TRIM(c.code) = TRIM(vsc.code)                              -- [SN-07][AE-04]
          AND TRIM(vsc.value_set_oid) IN ('2.16.840.1.113883.3.464.1004.1450',
                                           '2.16.840.1.113883.3.464.1004.2225')
-        WHERE TRIM(c.patient_id) = TRIM(d.patient_id)
+        WHERE c.patient_id = d.patient_id
           AND c.code_system = 'SNOMED-CT'
           AND c.start_date BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
     )
@@ -397,7 +397,7 @@ CTE_01_MEMBERS AS (
         JOIN HEALTHCARE_reference.measure_value_set_codes vsc
           ON TRIM(p.code) = TRIM(vsc.code)
          AND TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.2224'
-        WHERE TRIM(p.patient_id) = TRIM(d.patient_id)
+        WHERE p.patient_id = d.patient_id
           AND p.code_system = 'SNOMED-CT'
           AND CAST(p.start_ts AT TIME ZONE 'GMT' AS DATE)
                 BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
@@ -410,7 +410,7 @@ CTE_01_MEMBERS AS (
         JOIN HEALTHCARE_reference.measure_value_set_codes vsc2
           ON TRIM(c2.code) = TRIM(vsc2.code)
          AND TRIM(vsc2.value_set_oid) = '2.16.840.1.113883.3.464.1004.1065'
-        WHERE TRIM(c2.patient_id) = TRIM(d.patient_id)
+        WHERE c2.patient_id = d.patient_id
           AND c2.code_system = 'SNOMED-CT'
           AND c2.start_date <= DATE '2025-12-31'
     )
@@ -422,14 +422,14 @@ CTE_01_MEMBERS AS (
         JOIN HEALTHCARE_reference.measure_value_set_codes vsc3
           ON TRIM(p2.code) = TRIM(vsc3.code)
          AND TRIM(vsc3.value_set_oid) = '2.16.840.1.113883.3.464.1004.1250'
-        WHERE TRIM(p2.patient_id) = TRIM(d.patient_id)
+        WHERE p2.patient_id = d.patient_id
           AND p2.code_system = 'SNOMED-CT'
           AND CAST(p2.start_ts AT TIME ZONE 'GMT' AS DATE) <= DATE '2025-12-31'
     )
 )
 
 ,CTE_COLONOSCOPY_EVENTS AS (
-    SELECT DISTINCT TRIM(pr.patient_id) AS patient_id
+    SELECT DISTINCT pr.patient_id AS patient_id
     FROM HEALTHCARE_EHR.procedures pr
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
       ON TRIM(pr.code) = TRIM(vsc.code)
@@ -441,7 +441,7 @@ CTE_01_MEMBERS AS (
 )
 
 ,CTE_SIGMOIDOSCOPY_EVENTS AS (
-    SELECT DISTINCT TRIM(pr.patient_id) AS patient_id
+    SELECT DISTINCT pr.patient_id AS patient_id
     FROM HEALTHCARE_EHR.procedures pr
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
       ON TRIM(pr.code) = TRIM(vsc.code)
@@ -453,7 +453,7 @@ CTE_01_MEMBERS AS (
 )
 
 ,CTE_CT_COLONOGRAPHY_EVENTS AS (
-    SELECT DISTINCT TRIM(pr.patient_id) AS patient_id
+    SELECT DISTINCT pr.patient_id AS patient_id
     FROM HEALTHCARE_EHR.procedures pr
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
       ON TRIM(pr.code) = TRIM(vsc.code)
@@ -465,7 +465,7 @@ CTE_01_MEMBERS AS (
 )
 
 ,CTE_FOBT_EVENTS AS (
-    SELECT DISTINCT TRIM(ob.patient_id) AS patient_id
+    SELECT DISTINCT ob.patient_id AS patient_id
     FROM HEALTHCARE_EHR.observations ob
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
       ON TRIM(ob.code) = TRIM(vsc.code)
@@ -476,7 +476,7 @@ CTE_01_MEMBERS AS (
 )
 
 ,CTE_FITDNA_EVENTS AS (
-    SELECT DISTINCT TRIM(ob.patient_id) AS patient_id
+    SELECT DISTINCT ob.patient_id AS patient_id
     FROM HEALTHCARE_EHR.observations ob
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
       ON TRIM(ob.code) = TRIM(vsc.code)
@@ -508,12 +508,12 @@ CTE_01_MEMBERS AS (
         ,CASE WHEN q.patient_id IS NOT NULL THEN 1 ELSE 0 END AS in_numerator
     FROM CTE_04_EXCLUSIONS d
     LEFT JOIN CTE_QUALIFYING_EVENTS q
-        ON TRIM(d.patient_id) = TRIM(q.patient_id)              -- [AE-01] LEFT JOIN + IS NOT NULL
+        ON d.patient_id = q.patient_id              -- [AE-01] LEFT JOIN + IS NOT NULL
 )
 
 ,CTE_06_RESULT AS (
     SELECT DISTINCT
-        TRIM(n.patient_id) AS member_id
+        n.patient_id AS member_id
         ,n.in_numerator     AS in_numerator
     FROM CTE_05_NUMERATOR n
 )
@@ -576,7 +576,8 @@ Example questions this supports:
 - `CASE WHEN EXISTS (...)` is illegal (error 3771). Use a `LEFT JOIN` and test `IS NOT NULL`.
 - `AT TIME ZONE` is valid only on TIMESTAMP columns (`*_ts`): `CAST(col AT TIME ZONE 'GMT' AS DATE)`. DATE columns (`*_date`) compare directly (error 5407).
 - `NTILE` is not supported. Use `CASE WHEN` bands or `QUANTILE(n, col)`.
-- Wrap rate denominators in `NULLIFZERO()`; `TRIM()` every join key; no `ORDER BY` inside CTEs.
+- Wrap rate denominators in `NULLIFZERO()`; no `ORDER BY` inside CTEs.
+- `patient_id` and `encounter_id` are stored trimmed: join and filter on them directly, never `TRIM()` them (a function on the key defeats the primary index / row-hash join). Other keys and codes (payer_id, code, ...) are still wrapped in `TRIM()` in joins.
 - Do not use reserved words as aliases or output names (`value`, `year`, `month`, `day`, `level`, `rank`, `row`, `type`, `count`, `zone`, `title`, `summary`, `lt`, `gt`, `eq`, `in`, `is`, ...). Use `member_count`, `age_band`, etc.
 - Dates in the certified SQL are literals for the measurement year; keep them when reusing the spine.
 

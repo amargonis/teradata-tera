@@ -284,7 +284,7 @@ Running this as-is reproduces the certified population: one row per denominator 
 ```sql
 WITH CTE_01_MEMBERS AS (
     SELECT DISTINCT
-         TRIM(p.patient_id)   AS patient_id                                      -- [SN-04]
+         p.patient_id   AS patient_id                                      -- [SN-04]
         ,p.birth_date
         ,p.gender
         ,p.death_date
@@ -296,7 +296,7 @@ WITH CTE_01_MEMBERS AS (
 
 ,CTE_02A_SEGMENTS AS (
     SELECT DISTINCT
-         TRIM(pt.patient_id)                                   AS patient_id
+         pt.patient_id                                   AS patient_id
         ,CAST(pt.start_year AT TIME ZONE 'GMT' AS DATE)         AS seg_start   -- [SN-03]
         ,CAST(pt.end_year   AT TIME ZONE 'GMT' AS DATE)         AS seg_end     -- [SN-03]
     FROM HEALTHCARE_EHR.payer_transitions pt
@@ -328,7 +328,7 @@ WITH CTE_01_MEMBERS AS (
 )
 
 ,CTE_02_ENROLLED AS (
-    SELECT DISTINCT TRIM(patient_id) AS patient_id                               -- [Spec2:DENOM_ENROLL:MAPPED] [SN-07]
+    SELECT DISTINCT patient_id AS patient_id                               -- [Spec2:DENOM_ENROLL:MAPPED] [SN-07]
     FROM CTE_02D_MERGED
     WHERE island_start <= DATE '2025-01-01'
       AND island_end   >= DATE '2025-12-31'
@@ -341,7 +341,7 @@ WITH CTE_01_MEMBERS AS (
         ,(EXTRACT(YEAR FROM DATE '2025-12-31') - EXTRACT(YEAR FROM m.birth_date)) AS age_at_anchor
     FROM CTE_01_MEMBERS m
     INNER JOIN CTE_02_ENROLLED e
-        ON TRIM(m.patient_id) = TRIM(e.patient_id)                               -- [SN-04]
+        ON m.patient_id = e.patient_id                               -- [SN-04]
 )
 
 ,CTE_04_EXCLUSIONS AS (
@@ -352,7 +352,7 @@ WITH CTE_01_MEMBERS AS (
         INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc
             ON TRIM(pr.code) = TRIM(vsc.code) AND vsc.code_system = 'SNOMED CT US Edition'
            AND TRIM(vsc.value_set_oid) IN ('2.16.840.1.113883.3.464.1004.1761','2.16.840.1.113883.3.464.1004.1762')
-        WHERE TRIM(pr.patient_id) = TRIM(d.patient_id)
+        WHERE pr.patient_id = d.patient_id
           AND CAST(pr.start_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
     )                                                                              -- [Spec2:EXCL_HOSPICE:DOMAIN_GAP]
     AND NOT EXISTS (
@@ -360,7 +360,7 @@ WITH CTE_01_MEMBERS AS (
         INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc
             ON TRIM(co.code) = TRIM(vsc.code) AND vsc.code_system = 'SNOMED CT US Edition'
            AND TRIM(vsc.value_set_oid) IN ('2.16.840.1.113883.3.464.1004.1761','2.16.840.1.113883.3.464.1004.1762')
-        WHERE TRIM(co.patient_id) = TRIM(d.patient_id)
+        WHERE co.patient_id = d.patient_id
           AND co.start_date <= DATE '2025-12-31'
           AND (co.end_date IS NULL OR co.end_date >= DATE '2025-01-01')
     )                                                                              -- [Spec2:EXCL_HOSPICE:DOMAIN_GAP]
@@ -370,7 +370,7 @@ WITH CTE_01_MEMBERS AS (
             ON TRIM(co2.code) = TRIM(vsc2.code) AND vsc2.code_system = 'SNOMED CT US Edition'
            AND TRIM(vsc2.value_set_oid) IN
                ('2.16.840.1.113883.3.464.1004.1450','2.16.840.1.113883.3.464.1004.2225','2.16.840.1.113883.3.464.1004.2224')
-        WHERE TRIM(co2.patient_id) = TRIM(d.patient_id)
+        WHERE co2.patient_id = d.patient_id
           AND co2.start_date <= DATE '2025-12-31'
           AND (co2.end_date IS NULL OR co2.end_date >= DATE '2025-01-01')
     )                                                                              -- [Spec2:EXCL_PALLIATIVE:DOMAIN_GAP]
@@ -382,13 +382,13 @@ WITH CTE_01_MEMBERS AS (
              INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc3
                  ON TRIM(co3.code) = TRIM(vsc3.code) AND vsc3.code_system = 'SNOMED CT US Edition'
                 AND TRIM(vsc3.value_set_oid) IN ('2.16.840.1.113883.3.464.1004.1531','2.16.840.1.113883.3.464.1004.1533')
-             WHERE TRIM(co3.patient_id) = TRIM(d.patient_id)
+             WHERE co3.patient_id = d.patient_id
                AND co3.start_date BETWEEN DATE '2025-01-01' AND DATE '2025-12-31') >= 2
         AND (SELECT COUNT(DISTINCT co4.start_date) FROM HEALTHCARE_EHR.conditions co4
              INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc4
                  ON TRIM(co4.code) = TRIM(vsc4.code) AND vsc4.code_system = 'SNOMED CT US Edition'
                 AND TRIM(vsc4.value_set_oid) = '2.16.840.1.113883.3.464.1004.1465'
-             WHERE TRIM(co4.patient_id) = TRIM(d.patient_id)
+             WHERE co4.patient_id = d.patient_id
                AND co4.start_date BETWEEN DATE '2025-01-01' AND DATE '2025-12-31') >= 2
     )                                                                              -- [Spec2:EXCL_FRAILTY:DOMAIN_GAP]
     AND NOT EXISTS (
@@ -396,37 +396,37 @@ WITH CTE_01_MEMBERS AS (
         INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc5
             ON TRIM(co5.code) = TRIM(vsc5.code) AND vsc5.code_system = 'SNOMED CT US Edition'
            AND TRIM(vsc5.value_set_oid) IN ('2.16.840.1.113883.3.464.1004.1042','2.16.840.1.113883.3.464.1004.1331')
-        WHERE TRIM(co5.patient_id) = TRIM(d.patient_id) AND co5.start_date <= DATE '2025-12-31'
+        WHERE co5.patient_id = d.patient_id AND co5.start_date <= DATE '2025-12-31'
     )                                                                              -- [Spec2:EXCL_MASTECTOMY:DOMAIN_GAP]
     AND NOT (
         EXISTS (SELECT 1 FROM HEALTHCARE_EHR.conditions coL
                 INNER JOIN HEALTHCARE_reference.measure_value_set_codes vscL
                     ON TRIM(coL.code) = TRIM(vscL.code) AND vscL.code_system = 'SNOMED CT US Edition'
                    AND TRIM(vscL.value_set_oid) = '2.16.840.1.113883.3.464.1004.1334'
-                WHERE TRIM(coL.patient_id) = TRIM(d.patient_id) AND coL.start_date <= DATE '2025-12-31')
+                WHERE coL.patient_id = d.patient_id AND coL.start_date <= DATE '2025-12-31')
         AND EXISTS (SELECT 1 FROM HEALTHCARE_EHR.conditions coR
                 INNER JOIN HEALTHCARE_reference.measure_value_set_codes vscR
                     ON TRIM(coR.code) = TRIM(vscR.code) AND vscR.code_system = 'SNOMED CT US Edition'
                    AND TRIM(vscR.value_set_oid) = '2.16.840.1.113883.3.464.1004.1335'
-                WHERE TRIM(coR.patient_id) = TRIM(d.patient_id) AND coR.start_date <= DATE '2025-12-31')
+                WHERE coR.patient_id = d.patient_id AND coR.start_date <= DATE '2025-12-31')
     )                                                                              -- [Spec2:EXCL_MASTECTOMY:DOMAIN_GAP] EXCL_MAST_L_R
     AND NOT (
         EXISTS (SELECT 1 FROM HEALTHCARE_EHR.conditions coAL
                 INNER JOIN HEALTHCARE_reference.measure_value_set_codes vscAL
                     ON TRIM(coAL.code) = TRIM(vscAL.code) AND vscAL.code_system = 'SNOMED CT US Edition'
                    AND TRIM(vscAL.value_set_oid) = '2.16.840.1.113883.3.464.1004.1329'
-                WHERE TRIM(coAL.patient_id) = TRIM(d.patient_id))
+                WHERE coAL.patient_id = d.patient_id)
         AND EXISTS (SELECT 1 FROM HEALTHCARE_EHR.conditions coAR
                 INNER JOIN HEALTHCARE_reference.measure_value_set_codes vscAR
                     ON TRIM(coAR.code) = TRIM(vscAR.code) AND vscAR.code_system = 'SNOMED CT US Edition'
                    AND TRIM(vscAR.value_set_oid) = '2.16.840.1.113883.3.464.1004.1330'
-                WHERE TRIM(coAR.patient_id) = TRIM(d.patient_id))
+                WHERE coAR.patient_id = d.patient_id)
     )                                                                              -- [Spec2:EXCL_MASTECTOMY:DOMAIN_GAP] EXCL_MAST_ABSENT
     -- EXCL_MAST_MOD_B / EXCL_MAST_2_BILAT / EXCL_MAST_RL omitted — [Spec2:EXCL_MAST_MOD_B/2_BILAT/RL:MISSING] (SN-05)
 )
 
 ,CTE_MAMMO_EVENTS AS (
-    SELECT DISTINCT TRIM(pr.patient_id) AS patient_id
+    SELECT DISTINCT pr.patient_id AS patient_id
     FROM HEALTHCARE_EHR.procedures pr
     INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc
         ON TRIM(pr.code) = TRIM(vsc.code) AND vsc.code_system = 'SNOMED CT US Edition'
@@ -435,7 +435,7 @@ WITH CTE_01_MEMBERS AS (
 
     UNION
 
-    SELECT DISTINCT TRIM(ob.patient_id) AS patient_id
+    SELECT DISTINCT ob.patient_id AS patient_id
     FROM HEALTHCARE_EHR.observations ob
     INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc2
         ON TRIM(ob.code) = TRIM(vsc2.code) AND vsc2.code_system = 'LOINC'
@@ -449,12 +449,12 @@ WITH CTE_01_MEMBERS AS (
         ,CASE WHEN m.patient_id IS NOT NULL THEN 1 ELSE 0 END AS in_numerator     -- [Spec1:§10.1.8] LEFT JOIN + IS NOT NULL, no CASE WHEN EXISTS
     FROM CTE_04_EXCLUSIONS d
     LEFT JOIN CTE_MAMMO_EVENTS m
-        ON TRIM(d.patient_id) = TRIM(m.patient_id)                               -- [SN-04]
+        ON d.patient_id = m.patient_id                               -- [SN-04]
 )
 
 ,CTE_06_RESULT AS (
     SELECT DISTINCT
-         TRIM(n.patient_id) AS member_id
+         n.patient_id AS member_id
         ,n.in_numerator      AS in_numerator
     FROM CTE_05_NUMERATOR n
 )
@@ -516,7 +516,8 @@ Example questions this supports:
 - `CASE WHEN EXISTS (...)` is illegal (error 3771). Use a `LEFT JOIN` and test `IS NOT NULL`.
 - `AT TIME ZONE` is valid only on TIMESTAMP columns (`*_ts`): `CAST(col AT TIME ZONE 'GMT' AS DATE)`. DATE columns (`*_date`) compare directly (error 5407).
 - `NTILE` is not supported. Use `CASE WHEN` bands or `QUANTILE(n, col)`.
-- Wrap rate denominators in `NULLIFZERO()`; `TRIM()` every join key; no `ORDER BY` inside CTEs.
+- Wrap rate denominators in `NULLIFZERO()`; no `ORDER BY` inside CTEs.
+- `patient_id` and `encounter_id` are stored trimmed: join and filter on them directly, never `TRIM()` them (a function on the key defeats the primary index / row-hash join). Other keys and codes (payer_id, code, ...) are still wrapped in `TRIM()` in joins.
 - Do not use reserved words as aliases or output names (`value`, `year`, `month`, `day`, `level`, `rank`, `row`, `type`, `count`, `zone`, `title`, `summary`, `lt`, `gt`, `eq`, `in`, `is`, ...). Use `member_count`, `age_band`, etc.
 - Dates in the certified SQL are literals for the measurement year; keep them when reusing the spine.
 

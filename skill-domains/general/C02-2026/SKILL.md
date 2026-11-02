@@ -303,7 +303,7 @@ Running this as-is reproduces the certified population: one row per denominator 
 WITH
 CTE_01_MEMBERS AS (
     SELECT DISTINCT
-        TRIM(p.patient_id)      AS patient_id                       -- [SN-04]
+        p.patient_id      AS patient_id                       -- [SN-04]
         ,p.birth_date
         ,p.race                                                     -- [Spec2:AQ_RACE_ETHNICITY:MAPPED]
         ,p.ethnicity                                                 -- [Spec2:AQ_RACE_ETHNICITY:MAPPED]
@@ -318,7 +318,7 @@ CTE_01_MEMBERS AS (
 )
 ,enroll_segments AS (
     SELECT
-        TRIM(pt.patient_id) AS patient_id,                           -- [SN-04]
+        pt.patient_id AS patient_id,                           -- [SN-04]
         CAST(pt.start_year AS DATE) AS seg_start,                     -- [SN-03]
         CAST(pt.end_year   AS DATE) AS seg_end                        -- [SN-03]
     FROM HEALTHCARE_EHR.payer_transitions pt
@@ -350,7 +350,7 @@ CTE_01_MEMBERS AS (
     GROUP BY patient_id, episode_id
 )
 ,CTE_02_ENROLLED AS (
-    SELECT DISTINCT TRIM(patient_id) AS patient_id                   -- [Spec2:DENOM_ENROLL:PROXY:CERTIFIED_STITCHED] [SN-07]
+    SELECT DISTINCT patient_id AS patient_id                   -- [Spec2:DENOM_ENROLL:PROXY:CERTIFIED_STITCHED] [SN-07]
     FROM episode_span
     WHERE episode_start <= DATE '2026-01-01'
       AND episode_end   >= DATE '2026-12-31'
@@ -368,14 +368,14 @@ CTE_01_MEMBERS AS (
         ,(EXTRACT(YEAR FROM DATE '2026-12-31') - EXTRACT(YEAR FROM m.birth_date)) AS age_at_anchor
     FROM CTE_01_MEMBERS m
     INNER JOIN CTE_02_ENROLLED e
-        ON TRIM(m.patient_id) = TRIM(e.patient_id)                     -- [SN-04]
+        ON m.patient_id = e.patient_id                     -- [SN-04]
 )
 ,CTE_04_EXCLUSIONS AS (
     SELECT d.*
     FROM CTE_03_DENOMINATOR d
     WHERE NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.procedures hp
-        WHERE TRIM(hp.patient_id) = TRIM(d.patient_id)
+        WHERE hp.patient_id = d.patient_id
           AND hp.code_system = 'SNOMED-CT'
           AND TRIM(hp.code) IN (
               SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
@@ -386,7 +386,7 @@ CTE_01_MEMBERS AS (
     )                                                                   -- [Spec2:EXCL_HOSPICE:MAPPED]
     AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.conditions pc
-        WHERE TRIM(pc.patient_id) = TRIM(d.patient_id)
+        WHERE pc.patient_id = d.patient_id
           AND pc.code_system = 'SNOMED-CT'
           AND TRIM(pc.code) IN (
               SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
@@ -401,7 +401,7 @@ CTE_01_MEMBERS AS (
         d.age_at_anchor >= 66
         AND EXISTS (
             SELECT 1 FROM HEALTHCARE_EHR.conditions fc
-            WHERE TRIM(fc.patient_id) = TRIM(d.patient_id)
+            WHERE fc.patient_id = d.patient_id
               AND fc.code_system = 'SNOMED-CT'
               AND TRIM(fc.code) IN (
                   SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
@@ -413,7 +413,7 @@ CTE_01_MEMBERS AS (
         )
         AND EXISTS (
             SELECT 1 FROM HEALTHCARE_EHR.conditions ai
-            WHERE TRIM(ai.patient_id) = TRIM(d.patient_id)
+            WHERE ai.patient_id = d.patient_id
               AND ai.code_system = 'SNOMED-CT'
               AND TRIM(ai.code) IN (
                   SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
@@ -424,7 +424,7 @@ CTE_01_MEMBERS AS (
     )                                                                   -- [Spec2:EXCL_FRAILTY:DOMAIN_GAP:PARTIAL]
     AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.conditions crc
-        WHERE TRIM(crc.patient_id) = TRIM(d.patient_id)
+        WHERE crc.patient_id = d.patient_id
           AND crc.code_system = 'SNOMED-CT'
           AND TRIM(crc.code) IN (
               SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
@@ -434,7 +434,7 @@ CTE_01_MEMBERS AS (
     )                                                                   -- [Spec2:EXCL_COLORECTAL_CANCER_HISTORY:MAPPED]
     AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.procedures col
-        WHERE TRIM(col.patient_id) = TRIM(d.patient_id)
+        WHERE col.patient_id = d.patient_id
           AND col.code_system = 'SNOMED-CT'
           AND TRIM(col.code) IN (
               SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
@@ -444,7 +444,7 @@ CTE_01_MEMBERS AS (
     )                                                                   -- [Spec2:EXCL_TOTAL_COLECTOMY:MAPPED]
 )
 ,CTE_FOBT_EVENTS AS (
-    SELECT DISTINCT TRIM(o.patient_id) AS patient_id
+    SELECT DISTINCT o.patient_id AS patient_id
     FROM HEALTHCARE_EHR.observations o
     WHERE TRIM(o.code) IN (
         SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
@@ -452,7 +452,7 @@ CTE_01_MEMBERS AS (
       AND CAST(o.observation_ts AT TIME ZONE 'GMT' AS DATE)
             BETWEEN DATE '2026-01-01' AND DATE '2026-12-31'            -- [Spec2:NUM_FOBT:MAPPED]
     UNION
-    SELECT DISTINCT TRIM(c.patient_id) AS patient_id
+    SELECT DISTINCT c.patient_id AS patient_id
     FROM HEALTHCARE_EHR.conditions c
     WHERE c.code_system = 'SNOMED-CT'
       AND TRIM(c.code) IN (
@@ -461,7 +461,7 @@ CTE_01_MEMBERS AS (
       AND c.start_date BETWEEN DATE '2026-01-01' AND DATE '2026-12-31' -- [Spec2:NUM_FOBT:MAPPED]
 )
 ,CTE_FITDNA_EVENTS AS (
-    SELECT DISTINCT TRIM(o.patient_id) AS patient_id
+    SELECT DISTINCT o.patient_id AS patient_id
     FROM HEALTHCARE_EHR.observations o
     WHERE TRIM(o.code) IN (
         SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
@@ -470,7 +470,7 @@ CTE_01_MEMBERS AS (
             BETWEEN DATE '2024-01-01' AND DATE '2026-12-31'            -- [Spec2:NUM_FITDNA:MAPPED]
 )
 ,CTE_FLEXSIG_EVENTS AS (
-    SELECT DISTINCT TRIM(p.patient_id) AS patient_id
+    SELECT DISTINCT p.patient_id AS patient_id
     FROM HEALTHCARE_EHR.procedures p
     WHERE p.code_system = 'SNOMED-CT'
       AND TRIM(p.code) IN (
@@ -480,7 +480,7 @@ CTE_01_MEMBERS AS (
             BETWEEN DATE '2022-01-01' AND DATE '2026-12-31'            -- [Spec2:NUM_FLEXSIG:MAPPED]
 )
 ,CTE_COLONOSCOPY_EVENTS AS (
-    SELECT DISTINCT TRIM(p.patient_id) AS patient_id
+    SELECT DISTINCT p.patient_id AS patient_id
     FROM HEALTHCARE_EHR.procedures p
     WHERE p.code_system = 'SNOMED-CT'
       AND TRIM(p.code) IN (
@@ -504,11 +504,11 @@ CTE_01_MEMBERS AS (
         ,CASE WHEN n.patient_id IS NOT NULL THEN 1 ELSE 0 END AS in_numerator  -- [Spec2:NUM_COUNT_RULE:MAPPED]
     FROM CTE_04_EXCLUSIONS d
     LEFT JOIN CTE_NUM_EVENTS_ALL n
-        ON TRIM(d.patient_id) = TRIM(n.patient_id)                     -- [SN-04]
+        ON d.patient_id = n.patient_id                     -- [SN-04]
 )
 ,CTE_06_RESULT AS (
     SELECT
-        TRIM(patient_id) AS member_id,
+        patient_id AS member_id,
         in_numerator
     FROM CTE_05_NUMERATOR
 )
@@ -573,7 +573,8 @@ Example questions this supports:
 - `CASE WHEN EXISTS (...)` is illegal (error 3771). Use a `LEFT JOIN` and test `IS NOT NULL`.
 - `AT TIME ZONE` is valid only on TIMESTAMP columns (`*_ts`): `CAST(col AT TIME ZONE 'GMT' AS DATE)`. DATE columns (`*_date`) compare directly (error 5407).
 - `NTILE` is not supported. Use `CASE WHEN` bands or `QUANTILE(n, col)`.
-- Wrap rate denominators in `NULLIFZERO()`; `TRIM()` every join key; no `ORDER BY` inside CTEs.
+- Wrap rate denominators in `NULLIFZERO()`; no `ORDER BY` inside CTEs.
+- `patient_id` and `encounter_id` are stored trimmed: join and filter on them directly, never `TRIM()` them (a function on the key defeats the primary index / row-hash join). Other keys and codes (payer_id, code, ...) are still wrapped in `TRIM()` in joins.
 - Do not use reserved words as aliases or output names (`value`, `year`, `month`, `day`, `level`, `rank`, `row`, `type`, `count`, `zone`, `title`, `summary`, `lt`, `gt`, `eq`, `in`, `is`, ...). Use `member_count`, `age_band`, etc.
 - Dates in the certified SQL are literals for the measurement year; keep them when reusing the spine.
 

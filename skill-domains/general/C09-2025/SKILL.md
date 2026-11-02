@@ -289,7 +289,7 @@ Running this as-is reproduces the certified population: one row per denominator 
 WITH
 CTE_01_MEMBERS AS (
     SELECT DISTINCT
-        TRIM(p.patient_id)        AS patient_id            -- [SN-04][AE-09]
+        p.patient_id        AS patient_id            -- [SN-04][AE-09]
         ,p.birth_date
         ,p.death_date
         ,p.race
@@ -306,7 +306,7 @@ CTE_01_MEMBERS AS (
 )
 ,CTE_ENROLL_GOV_SEGMENTS AS (
     SELECT
-        TRIM(pt.patient_id)                                AS patient_id  -- [SN-04]
+        pt.patient_id                                AS patient_id  -- [SN-04]
         ,CAST(pt.start_year AT TIME ZONE 'GMT' AS DATE)     AS seg_start   -- [SN-03]
         ,CAST(pt.end_year   AT TIME ZONE 'GMT' AS DATE)     AS seg_end
     FROM HEALTHCARE_EHR.payer_transitions pt
@@ -335,7 +335,7 @@ CTE_01_MEMBERS AS (
     GROUP BY patient_id
 )
 ,CTE_02_ENROLLED AS (
-    SELECT DISTINCT TRIM(g.patient_id) AS patient_id
+    SELECT DISTINCT g.patient_id AS patient_id
     FROM CTE_ENROLL_GAPCHECK g
     WHERE g.coverage_start <= DATE '2025-01-01'
       AND g.coverage_end   >= DATE '2025-12-31'
@@ -364,10 +364,10 @@ CTE_01_MEMBERS AS (
                                                                  AS age_band_5         -- [Spec2:AQ_AGE_BAND_5:MAPPED]
     FROM CTE_01_MEMBERS m
     INNER JOIN CTE_02_ENROLLED e
-        ON TRIM(m.patient_id) = TRIM(e.patient_id)
+        ON m.patient_id = e.patient_id
     WHERE EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.conditions c
-        WHERE TRIM(c.patient_id) = TRIM(m.patient_id)
+        WHERE c.patient_id = m.patient_id
           AND c.code_system = 'SNOMED-CT'
           AND TRIM(c.code) IN (
               SELECT TRIM(vsc.code) FROM HEALTHCARE_reference.measure_value_set_codes vsc
@@ -383,13 +383,13 @@ CTE_01_MEMBERS AS (
 
     WHERE NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.encounters exc_e
-        WHERE TRIM(exc_e.patient_id) = TRIM(d.patient_id)
+        WHERE exc_e.patient_id = d.patient_id
           AND LOWER(exc_e.encounter_class) = 'hospice'
           AND CAST(exc_e.start_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
     )
     AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.procedures exc_p
-        WHERE TRIM(exc_p.patient_id) = TRIM(d.patient_id)
+        WHERE exc_p.patient_id = d.patient_id
           AND exc_p.code_system = 'SNOMED-CT'
           AND TRIM(exc_p.code) IN (
               SELECT TRIM(vsc.code) FROM HEALTHCARE_reference.measure_value_set_codes vsc
@@ -401,7 +401,7 @@ CTE_01_MEMBERS AS (
 
     AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.patients exc_pt
-        WHERE TRIM(exc_pt.patient_id) = TRIM(d.patient_id)
+        WHERE exc_pt.patient_id = d.patient_id
           AND exc_pt.death_date IS NOT NULL
           AND exc_pt.death_date BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
     )
@@ -409,7 +409,7 @@ CTE_01_MEMBERS AS (
 
     AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.procedures exc_pal
-        WHERE TRIM(exc_pal.patient_id) = TRIM(d.patient_id)
+        WHERE exc_pal.patient_id = d.patient_id
           AND exc_pal.code_system = 'SNOMED-CT'
           AND TRIM(exc_pal.code) IN (
               SELECT TRIM(vsc.code) FROM HEALTHCARE_reference.measure_value_set_codes vsc
@@ -424,7 +424,7 @@ CTE_01_MEMBERS AS (
         AND (
             SELECT COUNT(DISTINCT exc_f.start_date)
             FROM HEALTHCARE_EHR.conditions exc_f
-            WHERE TRIM(exc_f.patient_id) = TRIM(d.patient_id)
+            WHERE exc_f.patient_id = d.patient_id
               AND exc_f.code_system = 'SNOMED-CT'
               AND TRIM(exc_f.code) IN (
                   SELECT TRIM(vsc.code) FROM HEALTHCARE_reference.measure_value_set_codes vsc
@@ -437,7 +437,7 @@ CTE_01_MEMBERS AS (
             (   -- EXCL_ADV_ILL_VISITS (DOMAIN_GAP, two-year window)
                 EXISTS (
                     SELECT 1 FROM HEALTHCARE_EHR.conditions exc_ai
-                    WHERE TRIM(exc_ai.patient_id) = TRIM(d.patient_id)
+                    WHERE exc_ai.patient_id = d.patient_id
                       AND exc_ai.code_system = 'SNOMED-CT'
                       AND TRIM(exc_ai.code) IN (
                           SELECT TRIM(vsc.code) FROM HEALTHCARE_reference.measure_value_set_codes vsc
@@ -448,7 +448,7 @@ CTE_01_MEMBERS AS (
                 AND (
                     SELECT COUNT(DISTINCT CAST(exc_v.start_ts AT TIME ZONE 'GMT' AS DATE))
                     FROM HEALTHCARE_EHR.encounters exc_v
-                    WHERE TRIM(exc_v.patient_id) = TRIM(d.patient_id)
+                    WHERE exc_v.patient_id = d.patient_id
                       AND TRIM(exc_v.code) IN (
                           SELECT TRIM(vsc.code) FROM HEALTHCARE_reference.measure_value_set_codes vsc
                           WHERE TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.2474'
@@ -460,12 +460,12 @@ CTE_01_MEMBERS AS (
             (   -- EXCL_ADV_ILL_ACUTE_ENC (PROXY, two-year window)
                 EXISTS (
                     SELECT 1 FROM HEALTHCARE_EHR.encounters exc_ae
-                    WHERE TRIM(exc_ae.patient_id) = TRIM(d.patient_id)
+                    WHERE exc_ae.patient_id = d.patient_id
                       AND LOWER(exc_ae.encounter_class) = 'inpatient'
                       AND CAST(exc_ae.start_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2024-01-01' AND DATE '2025-12-31'
                       AND EXISTS (
                           SELECT 1 FROM HEALTHCARE_EHR.conditions exc_ai2
-                          WHERE TRIM(exc_ai2.patient_id) = TRIM(d.patient_id)
+                          WHERE exc_ai2.patient_id = d.patient_id
                             AND exc_ai2.code_system = 'SNOMED-CT'
                             AND TRIM(exc_ai2.code) IN (
                                 SELECT TRIM(vsc.code) FROM HEALTHCARE_reference.measure_value_set_codes vsc
@@ -479,12 +479,12 @@ CTE_01_MEMBERS AS (
             (   -- EXCL_ADV_ILL_ACUTE_DISCH (PROXY, two-year window, stop_ts as discharge substitute)
                 EXISTS (
                     SELECT 1 FROM HEALTHCARE_EHR.encounters exc_ad
-                    WHERE TRIM(exc_ad.patient_id) = TRIM(d.patient_id)
+                    WHERE exc_ad.patient_id = d.patient_id
                       AND LOWER(exc_ad.encounter_class) = 'inpatient'
                       AND CAST(exc_ad.end_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2024-01-01' AND DATE '2025-12-31'
                       AND EXISTS (
                           SELECT 1 FROM HEALTHCARE_EHR.conditions exc_ai3
-                          WHERE TRIM(exc_ai3.patient_id) = TRIM(d.patient_id)
+                          WHERE exc_ai3.patient_id = d.patient_id
                             AND exc_ai3.code_system = 'SNOMED-CT'
                             AND TRIM(exc_ai3.code) IN (
                                 SELECT TRIM(vsc.code) FROM HEALTHCARE_reference.measure_value_set_codes vsc
@@ -499,7 +499,7 @@ CTE_01_MEMBERS AS (
     -- [Spec2:EXCL_FRAILTY_ADVANCED_ILLNESS:PARTIAL]
 )
 ,CTE_NUM_EVENTS_PROC AS (
-    SELECT DISTINCT TRIM(p.patient_id) AS patient_id                     -- [SN-04]
+    SELECT DISTINCT p.patient_id AS patient_id                     -- [SN-04]
     FROM HEALTHCARE_EHR.procedures p
     WHERE p.code_system = 'SNOMED-CT'
       AND TRIM(p.code) IN (
@@ -510,7 +510,7 @@ CTE_01_MEMBERS AS (
     -- [Spec2:NUM_EYE_EXAM:MAPPED] Retinal Eye Exams / Retinal Imaging [AE-01]
 )
 ,CTE_NUM_EVENTS_OBS AS (
-    SELECT DISTINCT TRIM(o.patient_id) AS patient_id
+    SELECT DISTINCT o.patient_id AS patient_id
     FROM HEALTHCARE_EHR.observations o
     WHERE TRIM(o.code) IN (
           SELECT TRIM(vsc.code) FROM HEALTHCARE_reference.measure_value_set_codes vsc
@@ -527,12 +527,12 @@ CTE_01_MEMBERS AS (
 )
 ,CTE_06_RESULT AS (
     SELECT
-        TRIM(d.patient_id) AS member_id
+        d.patient_id AS member_id
         ,CASE WHEN n.patient_id IS NOT NULL THEN 1 ELSE 0 END AS in_numerator
         -- [Spec2:NUM_COUNT_RULE:MAPPED][AE-11] LEFT JOIN + IS NOT NULL — never CASE WHEN EXISTS()
     FROM CTE_04_EXCLUSIONS d
     LEFT JOIN CTE_05_NUMERATOR n
-        ON TRIM(d.patient_id) = TRIM(n.patient_id)
+        ON d.patient_id = n.patient_id
 )
 SELECT DISTINCT member_id, in_numerator FROM CTE_06_RESULT;
 ```
@@ -554,7 +554,7 @@ The spine is the certified SQL from the top through `CTE_05_NUMERATOR`. Columns 
 
 Member key: `patient_id`
 
-**Rate model:** `CTE_05_NUMERATOR` is ONLY the DISTINCT set of NUMERATOR members (columns: patient_id). It has NO denominator and NO `in_numerator` column. For this measure: read FROM the eligible-denominator CTE `CTE_04_EXCLUSIONS` (aliased d); LEFT JOIN `CTE_05_NUMERATOR` num ON TRIM(d.patient_id) = TRIM(num.patient_id); derive the flag with CASE WHEN num.patient_id IS NOT NULL THEN 1 ELSE 0 END; denominator = COUNT(DISTINCT d.patient_id); numerator = SUM(that flag).
+**Rate model:** `CTE_05_NUMERATOR` is ONLY the DISTINCT set of NUMERATOR members (columns: patient_id). It has NO denominator and NO `in_numerator` column. For this measure: read FROM the eligible-denominator CTE `CTE_04_EXCLUSIONS` (aliased d); LEFT JOIN `CTE_05_NUMERATOR` num ON d.patient_id = num.patient_id; derive the flag with CASE WHEN num.patient_id IS NOT NULL THEN 1 ELSE 0 END; denominator = COUNT(DISTINCT d.patient_id); numerator = SUM(that flag).
 
 ## Writing analytical queries
 
@@ -588,7 +588,8 @@ Example questions this supports:
 - `CASE WHEN EXISTS (...)` is illegal (error 3771). Use a `LEFT JOIN` and test `IS NOT NULL`.
 - `AT TIME ZONE` is valid only on TIMESTAMP columns (`*_ts`): `CAST(col AT TIME ZONE 'GMT' AS DATE)`. DATE columns (`*_date`) compare directly (error 5407).
 - `NTILE` is not supported. Use `CASE WHEN` bands or `QUANTILE(n, col)`.
-- Wrap rate denominators in `NULLIFZERO()`; `TRIM()` every join key; no `ORDER BY` inside CTEs.
+- Wrap rate denominators in `NULLIFZERO()`; no `ORDER BY` inside CTEs.
+- `patient_id` and `encounter_id` are stored trimmed: join and filter on them directly, never `TRIM()` them (a function on the key defeats the primary index / row-hash join). Other keys and codes (payer_id, code, ...) are still wrapped in `TRIM()` in joins.
 - Do not use reserved words as aliases or output names (`value`, `year`, `month`, `day`, `level`, `rank`, `row`, `type`, `count`, `zone`, `title`, `summary`, `lt`, `gt`, `eq`, `in`, `is`, ...). Use `member_count`, `age_band`, etc.
 - Dates in the certified SQL are literals for the measurement year; keep them when reusing the spine.
 
