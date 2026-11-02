@@ -13,9 +13,9 @@ description: >-
 Percent of female Medicare Advantage enrollees who had a mammogram to screen for breast cancer in the past two years
 
 - **Program:** STARS  |  **Measurement year:** 2025
-- **Customer data:** database `DEMO_HealthcareSynthea`; **reference database:** `HCLS`
-- **Source tables:** `DEMO_HealthcareSynthea.conditions`, `DEMO_HealthcareSynthea.observations`, `DEMO_HealthcareSynthea.patients`, `DEMO_HealthcareSynthea.payer_transitions`, `DEMO_HealthcareSynthea.payers`, `DEMO_HealthcareSynthea.procedures`, `HCLS.measure_value_set_codes`
-- **Exported:** 2026-10-26 from the Star Ratings measure automation app. The SQL below was generated, validated with Teradata `EXPLAIN`, and approved by a human reviewer.
+- **Customer data:** database `HEALTHCARE_EHR`; **reference database:** `HEALTHCARE_reference`
+- **Source tables:** `HEALTHCARE_EHR.conditions`, `HEALTHCARE_EHR.observations`, `HEALTHCARE_EHR.patients`, `HEALTHCARE_EHR.payer_transitions`, `HEALTHCARE_EHR.payers`, `HEALTHCARE_EHR.procedures`, `HEALTHCARE_reference.measure_value_set_codes`
+- **Exported:** 2026-11-02 from the Star Ratings measure automation app. The SQL below was generated, validated with Teradata `EXPLAIN`, and approved by a human reviewer.
 
 ## How to use this skill
 
@@ -288,7 +288,7 @@ WITH CTE_01_MEMBERS AS (
         ,p.birth_date
         ,p.gender
         ,p.death_date
-    FROM DEMO_HealthcareSynthea.patients p
+    FROM HEALTHCARE_EHR.patients p
     WHERE p.gender = 'F'                                                                       -- [Spec2:DENOM_GENDER:MAPPED]
       AND (EXTRACT(YEAR FROM DATE '2025-12-31') - EXTRACT(YEAR FROM p.birth_date)) BETWEEN 50 AND 74  -- [Spec2:DENOM_AGE:MAPPED]
       AND (p.death_date IS NULL OR p.death_date > DATE '2025-12-31')                            -- [Spec2:DENOM_ALIVE:MAPPED]
@@ -299,8 +299,8 @@ WITH CTE_01_MEMBERS AS (
          TRIM(pt.patient_id)                                   AS patient_id
         ,CAST(pt.start_year AT TIME ZONE 'GMT' AS DATE)         AS seg_start   -- [SN-03]
         ,CAST(pt.end_year   AT TIME ZONE 'GMT' AS DATE)         AS seg_end     -- [SN-03]
-    FROM DEMO_HealthcareSynthea.payer_transitions pt
-    INNER JOIN DEMO_HealthcareSynthea.payers py
+    FROM HEALTHCARE_EHR.payer_transitions pt
+    INNER JOIN HEALTHCARE_EHR.payers py
         ON TRIM(pt.primary_payer_id) = TRIM(py.payer_id)                       -- [SN-04] [SC-COL-FIX]
     WHERE py.payer_type <> 'NO_INSURANCE'                                     -- [Spec2:DENOM_PLAN_TYPE:PROXY]
       AND CAST(pt.start_year AT TIME ZONE 'GMT' AS DATE) <= DATE '2025-12-31'
@@ -348,16 +348,16 @@ WITH CTE_01_MEMBERS AS (
     SELECT d.*
     FROM CTE_03_DENOMINATOR d
     WHERE NOT EXISTS (
-        SELECT 1 FROM DEMO_HealthcareSynthea.procedures pr
-        INNER JOIN HCLS.measure_value_set_codes vsc
+        SELECT 1 FROM HEALTHCARE_EHR.procedures pr
+        INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc
             ON TRIM(pr.code) = TRIM(vsc.code) AND vsc.code_system = 'SNOMED CT US Edition'
            AND TRIM(vsc.value_set_oid) IN ('2.16.840.1.113883.3.464.1004.1761','2.16.840.1.113883.3.464.1004.1762')
         WHERE TRIM(pr.patient_id) = TRIM(d.patient_id)
           AND CAST(pr.start_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
     )                                                                              -- [Spec2:EXCL_HOSPICE:DOMAIN_GAP]
     AND NOT EXISTS (
-        SELECT 1 FROM DEMO_HealthcareSynthea.conditions co
-        INNER JOIN HCLS.measure_value_set_codes vsc
+        SELECT 1 FROM HEALTHCARE_EHR.conditions co
+        INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc
             ON TRIM(co.code) = TRIM(vsc.code) AND vsc.code_system = 'SNOMED CT US Edition'
            AND TRIM(vsc.value_set_oid) IN ('2.16.840.1.113883.3.464.1004.1761','2.16.840.1.113883.3.464.1004.1762')
         WHERE TRIM(co.patient_id) = TRIM(d.patient_id)
@@ -365,8 +365,8 @@ WITH CTE_01_MEMBERS AS (
           AND (co.end_date IS NULL OR co.end_date >= DATE '2025-01-01')
     )                                                                              -- [Spec2:EXCL_HOSPICE:DOMAIN_GAP]
     AND NOT EXISTS (
-        SELECT 1 FROM DEMO_HealthcareSynthea.conditions co2
-        INNER JOIN HCLS.measure_value_set_codes vsc2
+        SELECT 1 FROM HEALTHCARE_EHR.conditions co2
+        INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc2
             ON TRIM(co2.code) = TRIM(vsc2.code) AND vsc2.code_system = 'SNOMED CT US Edition'
            AND TRIM(vsc2.value_set_oid) IN
                ('2.16.840.1.113883.3.464.1004.1450','2.16.840.1.113883.3.464.1004.2225','2.16.840.1.113883.3.464.1004.2224')
@@ -378,46 +378,46 @@ WITH CTE_01_MEMBERS AS (
     -- EXCL_LTI  omitted — [Spec2:EXCL_LTI:MISSING]
     AND NOT (
         d.age_at_anchor >= 66                                                     -- [Spec1:§7.3/7.4/7.5 age gate]
-        AND (SELECT COUNT(DISTINCT co3.start_date) FROM DEMO_HealthcareSynthea.conditions co3
-             INNER JOIN HCLS.measure_value_set_codes vsc3
+        AND (SELECT COUNT(DISTINCT co3.start_date) FROM HEALTHCARE_EHR.conditions co3
+             INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc3
                  ON TRIM(co3.code) = TRIM(vsc3.code) AND vsc3.code_system = 'SNOMED CT US Edition'
                 AND TRIM(vsc3.value_set_oid) IN ('2.16.840.1.113883.3.464.1004.1531','2.16.840.1.113883.3.464.1004.1533')
              WHERE TRIM(co3.patient_id) = TRIM(d.patient_id)
                AND co3.start_date BETWEEN DATE '2025-01-01' AND DATE '2025-12-31') >= 2
-        AND (SELECT COUNT(DISTINCT co4.start_date) FROM DEMO_HealthcareSynthea.conditions co4
-             INNER JOIN HCLS.measure_value_set_codes vsc4
+        AND (SELECT COUNT(DISTINCT co4.start_date) FROM HEALTHCARE_EHR.conditions co4
+             INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc4
                  ON TRIM(co4.code) = TRIM(vsc4.code) AND vsc4.code_system = 'SNOMED CT US Edition'
                 AND TRIM(vsc4.value_set_oid) = '2.16.840.1.113883.3.464.1004.1465'
              WHERE TRIM(co4.patient_id) = TRIM(d.patient_id)
                AND co4.start_date BETWEEN DATE '2025-01-01' AND DATE '2025-12-31') >= 2
     )                                                                              -- [Spec2:EXCL_FRAILTY:DOMAIN_GAP]
     AND NOT EXISTS (
-        SELECT 1 FROM DEMO_HealthcareSynthea.conditions co5
-        INNER JOIN HCLS.measure_value_set_codes vsc5
+        SELECT 1 FROM HEALTHCARE_EHR.conditions co5
+        INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc5
             ON TRIM(co5.code) = TRIM(vsc5.code) AND vsc5.code_system = 'SNOMED CT US Edition'
            AND TRIM(vsc5.value_set_oid) IN ('2.16.840.1.113883.3.464.1004.1042','2.16.840.1.113883.3.464.1004.1331')
         WHERE TRIM(co5.patient_id) = TRIM(d.patient_id) AND co5.start_date <= DATE '2025-12-31'
     )                                                                              -- [Spec2:EXCL_MASTECTOMY:DOMAIN_GAP]
     AND NOT (
-        EXISTS (SELECT 1 FROM DEMO_HealthcareSynthea.conditions coL
-                INNER JOIN HCLS.measure_value_set_codes vscL
+        EXISTS (SELECT 1 FROM HEALTHCARE_EHR.conditions coL
+                INNER JOIN HEALTHCARE_reference.measure_value_set_codes vscL
                     ON TRIM(coL.code) = TRIM(vscL.code) AND vscL.code_system = 'SNOMED CT US Edition'
                    AND TRIM(vscL.value_set_oid) = '2.16.840.1.113883.3.464.1004.1334'
                 WHERE TRIM(coL.patient_id) = TRIM(d.patient_id) AND coL.start_date <= DATE '2025-12-31')
-        AND EXISTS (SELECT 1 FROM DEMO_HealthcareSynthea.conditions coR
-                INNER JOIN HCLS.measure_value_set_codes vscR
+        AND EXISTS (SELECT 1 FROM HEALTHCARE_EHR.conditions coR
+                INNER JOIN HEALTHCARE_reference.measure_value_set_codes vscR
                     ON TRIM(coR.code) = TRIM(vscR.code) AND vscR.code_system = 'SNOMED CT US Edition'
                    AND TRIM(vscR.value_set_oid) = '2.16.840.1.113883.3.464.1004.1335'
                 WHERE TRIM(coR.patient_id) = TRIM(d.patient_id) AND coR.start_date <= DATE '2025-12-31')
     )                                                                              -- [Spec2:EXCL_MASTECTOMY:DOMAIN_GAP] EXCL_MAST_L_R
     AND NOT (
-        EXISTS (SELECT 1 FROM DEMO_HealthcareSynthea.conditions coAL
-                INNER JOIN HCLS.measure_value_set_codes vscAL
+        EXISTS (SELECT 1 FROM HEALTHCARE_EHR.conditions coAL
+                INNER JOIN HEALTHCARE_reference.measure_value_set_codes vscAL
                     ON TRIM(coAL.code) = TRIM(vscAL.code) AND vscAL.code_system = 'SNOMED CT US Edition'
                    AND TRIM(vscAL.value_set_oid) = '2.16.840.1.113883.3.464.1004.1329'
                 WHERE TRIM(coAL.patient_id) = TRIM(d.patient_id))
-        AND EXISTS (SELECT 1 FROM DEMO_HealthcareSynthea.conditions coAR
-                INNER JOIN HCLS.measure_value_set_codes vscAR
+        AND EXISTS (SELECT 1 FROM HEALTHCARE_EHR.conditions coAR
+                INNER JOIN HEALTHCARE_reference.measure_value_set_codes vscAR
                     ON TRIM(coAR.code) = TRIM(vscAR.code) AND vscAR.code_system = 'SNOMED CT US Edition'
                    AND TRIM(vscAR.value_set_oid) = '2.16.840.1.113883.3.464.1004.1330'
                 WHERE TRIM(coAR.patient_id) = TRIM(d.patient_id))
@@ -427,8 +427,8 @@ WITH CTE_01_MEMBERS AS (
 
 ,CTE_MAMMO_EVENTS AS (
     SELECT DISTINCT TRIM(pr.patient_id) AS patient_id
-    FROM DEMO_HealthcareSynthea.procedures pr
-    INNER JOIN HCLS.measure_value_set_codes vsc
+    FROM HEALTHCARE_EHR.procedures pr
+    INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc
         ON TRIM(pr.code) = TRIM(vsc.code) AND vsc.code_system = 'SNOMED CT US Edition'
        AND TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.1168'          -- [Spec2:NUM_MAMMOGRAM:MAPPED]
     WHERE CAST(pr.start_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2024-01-01' AND DATE '2025-12-31'  -- [Spec2:NUM_DATE_WINDOW:MAPPED]
@@ -436,8 +436,8 @@ WITH CTE_01_MEMBERS AS (
     UNION
 
     SELECT DISTINCT TRIM(ob.patient_id) AS patient_id
-    FROM DEMO_HealthcareSynthea.observations ob
-    INNER JOIN HCLS.measure_value_set_codes vsc2
+    FROM HEALTHCARE_EHR.observations ob
+    INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc2
         ON TRIM(ob.code) = TRIM(vsc2.code) AND vsc2.code_system = 'LOINC'
        AND TRIM(vsc2.value_set_oid) = '2.16.840.1.113883.3.464.1004.1168'         -- [Spec2:NUM_MAMMOGRAM:MAPPED]
     WHERE CAST(ob.observation_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2024-01-01' AND DATE '2025-12-31'  -- [Spec2:NUM_DATE_WINDOW:MAPPED]
@@ -521,29 +521,29 @@ Example questions this supports:
 - Dates in the certified SQL are literals for the measurement year; keep them when reusing the spine.
 
 Reference (configuration) tables used by the certified SQL:
-REFERENCE (CONFIGURATION) TABLE DATA DICTIONARY — database HCLS:
+REFERENCE (CONFIGURATION) TABLE DATA DICTIONARY — database HEALTHCARE_reference:
 The value sets live in THREE tables. Their columns are FIXED — use exactly these:
 
-- HCLS.measure_value_set_codes   ← THE CODES ARE HERE. Columns:
+- HEALTHCARE_reference.measure_value_set_codes   ← THE CODES ARE HERE. Columns:
       value_set_oid, value_set_name, value_set_version (DATE), code, code_desc,
       code_system, measurement_year (INTEGER)
-- HCLS.measure_value_sets        ← value-set HEADER ONLY — HAS NO `code` COLUMN. Columns:
+- HEALTHCARE_reference.measure_value_sets        ← value-set HEADER ONLY — HAS NO `code` COLUMN. Columns:
       measure_id, measurement_year, measure_name, value_set_name, value_set_oid
-- HCLS.measure_to_value_set      ← approved concept→value-set map (per measure/year). Columns:
+- HEALTHCARE_reference.measure_to_value_set      ← approved concept→value-set map (per measure/year). Columns:
       measure_id, measure_component, concept_id, value_set_oid, lookback_years,
       lookback_note, measurement_year, applies_to_age_min, applies_to_age_max, notes
 
 MEDICATION LISTS (drug-based concepts) live in the parallel trio — same shape:
-- HCLS.measure_medication_list_codes ← THE DRUG CODES ARE HERE. Columns:
+- HEALTHCARE_reference.measure_medication_list_codes ← THE DRUG CODES ARE HERE. Columns:
       medication_list_oid, medication_list_name, code, code_system (RxNorm/NDC),
       generic_name, brand_name, measurement_year (INTEGER)
-- HCLS.measure_to_medication_list    ← approved concept→medication-list map. Columns mirror
+- HEALTHCARE_reference.measure_to_medication_list    ← approved concept→medication-list map. Columns mirror
       measure_to_value_set with `medication_list_oid` in place of `value_set_oid`.
 A concept whose RESOLVED CODE SETS are RxNorm/NDC is a MEDICATION concept: join it to the
 customer's MEDICATIONS / pharmacy table's drug-code column — NOT procedures/conditions.
 
-CRITICAL: codes are in HCLS.measure_value_set_codes (clinical) / HCLS.measure_medication_list_codes
-(drug). NEVER select or join `code` from HCLS.measure_value_sets — it does not have that column
+CRITICAL: codes are in HEALTHCARE_reference.measure_value_set_codes (clinical) / HEALTHCARE_reference.measure_medication_list_codes
+(drug). NEVER select or join `code` from HEALTHCARE_reference.measure_value_sets — it does not have that column
 (Error 5628).
 
 YEAR-SCOPING (mandatory): all three tables carry measurement_year. The SAME OID can
@@ -554,13 +554,13 @@ together and the measure is wrong.
 CODE RESOLUTION — two allowed patterns:
 1. PREFERRED: use the literal codes under "=== RESOLVED CODE SETS ===" as IN-lists.
 2. If a value set is too large to inline, JOIN to the codes table by OID + year:
-       JOIN HCLS.measure_value_set_codes vsc
+       JOIN HEALTHCARE_reference.measure_value_set_codes vsc
          ON TRIM(clinical.code) = TRIM(vsc.code)
         AND TRIM(vsc.value_set_oid) = '<value_set_oid from Spec 3>'
         AND vsc.measurement_year = <YEAR>
-   or resolve every OID for a concept via HCLS.measure_to_value_set first:
-       JOIN HCLS.measure_to_value_set mt
+   or resolve every OID for a concept via HEALTHCARE_reference.measure_to_value_set first:
+       JOIN HEALTHCARE_reference.measure_to_value_set mt
          ON mt.measure_id='<MID>' AND mt.measurement_year=<YEAR> AND mt.concept_id='<CONCEPT>'
-       JOIN HCLS.measure_value_set_codes vsc
+       JOIN HEALTHCARE_reference.measure_value_set_codes vsc
          ON TRIM(vsc.value_set_oid) = TRIM(mt.value_set_oid)
         AND vsc.measurement_year = mt.measurement_year
