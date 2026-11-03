@@ -315,8 +315,8 @@ CTE_00_IESD AS (
         ,MIN(c.start_date)      AS iesd
     FROM HEALTHCARE_EHR.conditions c
     WHERE c.code_system = 'SNOMED-CT'
-      AND TRIM(c.code) IN (
-            SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
+      AND c.code IN (
+            SELECT code FROM HEALTHCARE_reference.measure_value_set_codes
             WHERE value_set_oid = 'FRACTURE_VALUE_SET_OID_PENDING_CONFIRMATION'
               AND code_system = 'SNOMED-CT'
               AND measurement_year = 2025)
@@ -356,7 +356,7 @@ CTE_00_IESD AS (
         ,CAST(CAST(pt.end_year   AS VARCHAR(4)) || '-12-31' AS DATE)     AS seg_end     -- [SN-02]
     FROM HEALTHCARE_EHR.payer_transitions pt
     INNER JOIN CTE_01_MEMBERS m ON pt.patient_id = m.patient_id
-    INNER JOIN HEALTHCARE_EHR.payers py ON TRIM(pt.primary_payer_id) = TRIM(py.payer_id)  -- [SN-03]
+    INNER JOIN HEALTHCARE_EHR.payers py ON pt.primary_payer_id = py.payer_id  -- [SN-03]
     WHERE py.payer_type = 'GOVERNMENT'                               -- [Spec2:DENOM_PLAN_TYPE:PROXY]
       AND py.payer IN ('Medicare', 'Dual Eligible')
       AND CAST(CAST(pt.start_year AS VARCHAR(4)) || '-01-01' AS DATE) <= (m.iesd + 180)
@@ -417,8 +417,8 @@ CTE_00_IESD AS (
         SELECT 1 FROM HEALTHCARE_EHR.procedures pb
         WHERE pb.patient_id = d.patient_id
           AND pb.code_system = 'SNOMED-CT'
-          AND TRIM(pb.code) IN (
-                SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
+          AND pb.code IN (
+                SELECT code FROM HEALTHCARE_reference.measure_value_set_codes
                 WHERE value_set_oid = 'BMD_VALUE_SET_OID_PENDING_CONFIRMATION'
                   AND code_system = 'SNOMED-CT'
                   AND measurement_year = 2025)
@@ -427,8 +427,8 @@ CTE_00_IESD AS (
       AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.encounters ec
         WHERE ec.patient_id = d.patient_id
-          AND TRIM(ec.code) IN (
-                SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
+          AND ec.code IN (
+                SELECT code FROM HEALTHCARE_reference.measure_value_set_codes
                 WHERE value_set_oid = 'OSTEO_MED_VALUE_SET_OID_PENDING_CONFIRMATION'
                   AND code_system = 'SNOMED-CT'
                   AND measurement_year = 2025)
@@ -437,8 +437,8 @@ CTE_00_IESD AS (
       AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.medications mx
         WHERE mx.patient_id = d.patient_id
-          AND TRIM(mx.code) IN (
-                SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
+          AND mx.code IN (
+                SELECT code FROM HEALTHCARE_reference.measure_value_set_codes
                 WHERE value_set_oid = 'OSTEO_MED_VALUE_SET_OID_PENDING_CONFIRMATION'
                   AND measurement_year = 2025)
           AND CAST(mx.start_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN (d.iesd - 365) AND (d.iesd - 1)
@@ -446,8 +446,8 @@ CTE_00_IESD AS (
       AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.encounters eh
         WHERE eh.patient_id = d.patient_id
-          AND TRIM(eh.code) IN (
-                SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
+          AND eh.code IN (
+                SELECT code FROM HEALTHCARE_reference.measure_value_set_codes
                 WHERE value_set_oid IN ('2.16.840.1.113883.3.464.1004.1761','2.16.840.1.113883.3.464.1004.1762')
                   AND code_system = 'SNOMED-CT'
                   AND measurement_year = 2025)
@@ -458,8 +458,8 @@ CTE_00_IESD AS (
       AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.conditions cp
         WHERE cp.patient_id = d.patient_id
-          AND TRIM(cp.code) IN (
-                SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
+          AND cp.code IN (
+                SELECT code FROM HEALTHCARE_reference.measure_value_set_codes
                 WHERE value_set_oid IN ('2.16.840.1.113883.3.464.1004.2225','2.16.840.1.113883.3.464.1004.1450','2.16.840.1.113883.3.464.1004.2224')
                   AND code_system = 'SNOMED-CT'
                   AND measurement_year = 2025)
@@ -471,8 +471,8 @@ CTE_00_IESD AS (
             SELECT COUNT(DISTINCT c.start_date)
             FROM HEALTHCARE_EHR.conditions c
             WHERE c.patient_id = d.patient_id
-              AND TRIM(c.code) IN (
-                    SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
+              AND c.code IN (
+                    SELECT code FROM HEALTHCARE_reference.measure_value_set_codes
                     WHERE value_set_oid IN ('2.16.840.1.113883.3.464.1004.1530','2.16.840.1.113883.3.464.1004.1531',
                                              '2.16.840.1.113883.3.464.1004.1532','2.16.840.1.113883.3.464.1004.1533')
                       AND code_system = 'SNOMED-CT'
@@ -483,16 +483,16 @@ CTE_00_IESD AS (
             EXISTS (
                 SELECT 1 FROM HEALTHCARE_EHR.encounters ai
                 WHERE ai.patient_id = d.patient_id
-                  AND TRIM(ai.code) IN (
-                        SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
+                  AND ai.code IN (
+                        SELECT code FROM HEALTHCARE_reference.measure_value_set_codes
                         WHERE value_set_oid = '2.16.840.1.113883.3.464.1004.1810'
                           AND code_system = 'SNOMED-CT'
                           AND measurement_year = 2025)
                   AND EXISTS (
                         SELECT 1 FROM HEALTHCARE_EHR.conditions aidx
                         WHERE aidx.patient_id = d.patient_id
-                          AND TRIM(aidx.code) IN (
-                                SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
+                          AND aidx.code IN (
+                                SELECT code FROM HEALTHCARE_reference.measure_value_set_codes
                                 WHERE value_set_oid = '2.16.840.1.113883.3.464.1004.1465'
                                   AND code_system = 'SNOMED-CT'
                                   AND measurement_year = 2025))
@@ -503,16 +503,16 @@ CTE_00_IESD AS (
                 SELECT COUNT(DISTINCT CAST(v.start_ts AT TIME ZONE 'GMT' AS DATE))
                 FROM HEALTHCARE_EHR.encounters v
                 WHERE v.patient_id = d.patient_id
-                  AND TRIM(v.code) IN (
-                        SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
+                  AND v.code IN (
+                        SELECT code FROM HEALTHCARE_reference.measure_value_set_codes
                         WHERE value_set_oid = '2.16.840.1.113883.3.464.1004.2474'
                           AND code_system = 'SNOMED-CT'
                           AND measurement_year = 2025)
                   AND EXISTS (
                         SELECT 1 FROM HEALTHCARE_EHR.conditions vdx
                         WHERE vdx.patient_id = d.patient_id
-                          AND TRIM(vdx.code) IN (
-                                SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
+                          AND vdx.code IN (
+                                SELECT code FROM HEALTHCARE_reference.measure_value_set_codes
                                 WHERE value_set_oid = '2.16.840.1.113883.3.464.1004.1465'
                                   AND code_system = 'SNOMED-CT'
                                   AND measurement_year = 2025))
@@ -527,8 +527,8 @@ CTE_00_IESD AS (
             SELECT COUNT(DISTINCT c81.start_date)
             FROM HEALTHCARE_EHR.conditions c81
             WHERE c81.patient_id = d.patient_id
-              AND TRIM(c81.code) IN (
-                    SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
+              AND c81.code IN (
+                    SELECT code FROM HEALTHCARE_reference.measure_value_set_codes
                     WHERE value_set_oid IN ('2.16.840.1.113883.3.464.1004.1530','2.16.840.1.113883.3.464.1004.1531',
                                              '2.16.840.1.113883.3.464.1004.1532','2.16.840.1.113883.3.464.1004.1533')
                       AND code_system = 'SNOMED-CT'
@@ -543,8 +543,8 @@ CTE_00_IESD AS (
     FROM HEALTHCARE_EHR.procedures pr
     INNER JOIN CTE_04_EXCLUSIONS d ON pr.patient_id = d.patient_id
     WHERE pr.code_system = 'SNOMED-CT'
-      AND TRIM(pr.code) IN (
-            SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
+      AND pr.code IN (
+            SELECT code FROM HEALTHCARE_reference.measure_value_set_codes
             WHERE value_set_oid = 'BMD_VALUE_SET_OID_PENDING_CONFIRMATION'
               AND code_system = 'SNOMED-CT'
               AND measurement_year = 2025)
@@ -555,8 +555,8 @@ CTE_00_IESD AS (
     SELECT DISTINCT mx.patient_id AS patient_id
     FROM HEALTHCARE_EHR.medications mx
     INNER JOIN CTE_04_EXCLUSIONS d ON mx.patient_id = d.patient_id
-    WHERE TRIM(mx.code) IN (
-            SELECT TRIM(code) FROM HEALTHCARE_reference.measure_value_set_codes
+    WHERE mx.code IN (
+            SELECT code FROM HEALTHCARE_reference.measure_value_set_codes
             WHERE value_set_oid = 'OSTEO_MED_VALUE_SET_OID_PENDING_CONFIRMATION'
               AND measurement_year = 2025)
       AND CAST(mx.start_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN d.iesd AND (d.iesd + 180)
@@ -647,7 +647,7 @@ Example questions this supports:
 - `AT TIME ZONE` is valid only on TIMESTAMP columns (`*_ts`): `CAST(col AT TIME ZONE 'GMT' AS DATE)`. DATE columns (`*_date`) compare directly (error 5407).
 - `NTILE` is not supported. Use `CASE WHEN` bands or `QUANTILE(n, col)`.
 - Wrap rate denominators in `NULLIFZERO()`; no `ORDER BY` inside CTEs.
-- `patient_id` and `encounter_id` are stored trimmed: join and filter on them directly, never `TRIM()` them (a function on the key defeats the primary index / row-hash join). Other keys and codes (payer_id, code, ...) are still wrapped in `TRIM()` in joins.
+- Never wrap a join key in `TRIM()` (or any function): it defeats primary-index, row-hash and partition use. Join columns directly. `patient_id` and `encounter_id` are stored trimmed. `TRIM()` is fine on a column compared with a literal (a filter, not a join).
 - Do not use reserved words as aliases or output names (`value`, `year`, `month`, `day`, `level`, `rank`, `row`, `type`, `count`, `zone`, `title`, `summary`, `lt`, `gt`, `eq`, `in`, `is`, ...). Use `member_count`, `age_band`, etc.
 - Dates in the certified SQL are literals for the measurement year; keep them when reusing the spine.
 
@@ -686,12 +686,12 @@ CODE RESOLUTION — two allowed patterns:
 1. PREFERRED: use the literal codes under "=== RESOLVED CODE SETS ===" as IN-lists.
 2. If a value set is too large to inline, JOIN to the codes table by OID + year:
        JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-         ON TRIM(clinical.code) = TRIM(vsc.code)
+         ON clinical.code = vsc.code
         AND TRIM(vsc.value_set_oid) = '<value_set_oid from Spec 3>'
         AND vsc.measurement_year = <YEAR>
    or resolve every OID for a concept via HEALTHCARE_reference.measure_to_value_set first:
        JOIN HEALTHCARE_reference.measure_to_value_set mt
          ON mt.measure_id='<MID>' AND mt.measurement_year=<YEAR> AND mt.concept_id='<CONCEPT>'
        JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-         ON TRIM(vsc.value_set_oid) = TRIM(mt.value_set_oid)
+         ON vsc.value_set_oid = mt.value_set_oid
         AND vsc.measurement_year = mt.measurement_year

@@ -344,7 +344,7 @@ CTE_01_MEMBERS AS (
                        ORDER BY CAST(pt.start_year AT TIME ZONE 'GMT' AS DATE)) AS gap_days
         FROM HEALTHCARE_EHR.payer_transitions pt
         INNER JOIN HEALTHCARE_EHR.payers py
-            ON TRIM(pt.primary_payer_id) = TRIM(py.payer_id)          -- [SN-06]
+            ON pt.primary_payer_id = py.payer_id          -- [SN-06]
         WHERE py.payer_type = 'GOVERNMENT'                            -- [Spec2:DENOM_PLAN_TYPE:PROXY] [SN-08]
     ) seg
     GROUP BY seg.patient_id
@@ -384,7 +384,7 @@ CTE_01_MEMBERS AS (
         SELECT 1
         FROM HEALTHCARE_EHR.conditions c
         JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-          ON TRIM(c.code) = TRIM(vsc.code)                              -- [SN-07][AE-04]
+          ON c.code = vsc.code                              -- [SN-07][AE-04]
          AND TRIM(vsc.value_set_oid) IN ('2.16.840.1.113883.3.464.1004.1450',
                                           '2.16.840.1.113883.3.464.1004.2225')
         WHERE c.patient_id = d.patient_id
@@ -395,7 +395,7 @@ CTE_01_MEMBERS AS (
         SELECT 1
         FROM HEALTHCARE_EHR.procedures p
         JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-          ON TRIM(p.code) = TRIM(vsc.code)
+          ON p.code = vsc.code
          AND TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.2224'
         WHERE p.patient_id = d.patient_id
           AND p.code_system = 'SNOMED-CT'
@@ -408,7 +408,7 @@ CTE_01_MEMBERS AS (
         SELECT 1
         FROM HEALTHCARE_EHR.conditions c2
         JOIN HEALTHCARE_reference.measure_value_set_codes vsc2
-          ON TRIM(c2.code) = TRIM(vsc2.code)
+          ON c2.code = vsc2.code
          AND TRIM(vsc2.value_set_oid) = '2.16.840.1.113883.3.464.1004.1065'
         WHERE c2.patient_id = d.patient_id
           AND c2.code_system = 'SNOMED-CT'
@@ -420,7 +420,7 @@ CTE_01_MEMBERS AS (
         SELECT 1
         FROM HEALTHCARE_EHR.procedures p2
         JOIN HEALTHCARE_reference.measure_value_set_codes vsc3
-          ON TRIM(p2.code) = TRIM(vsc3.code)
+          ON p2.code = vsc3.code
          AND TRIM(vsc3.value_set_oid) = '2.16.840.1.113883.3.464.1004.1250'
         WHERE p2.patient_id = d.patient_id
           AND p2.code_system = 'SNOMED-CT'
@@ -432,7 +432,7 @@ CTE_01_MEMBERS AS (
     SELECT DISTINCT pr.patient_id AS patient_id
     FROM HEALTHCARE_EHR.procedures pr
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-      ON TRIM(pr.code) = TRIM(vsc.code)
+      ON pr.code = vsc.code
      AND TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.1064'
     WHERE pr.code_system = 'SNOMED-CT'
       AND CAST(pr.start_ts AT TIME ZONE 'GMT' AS DATE)
@@ -444,7 +444,7 @@ CTE_01_MEMBERS AS (
     SELECT DISTINCT pr.patient_id AS patient_id
     FROM HEALTHCARE_EHR.procedures pr
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-      ON TRIM(pr.code) = TRIM(vsc.code)
+      ON pr.code = vsc.code
      AND TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.1102'
     WHERE pr.code_system = 'SNOMED-CT'
       AND CAST(pr.start_ts AT TIME ZONE 'GMT' AS DATE)
@@ -456,7 +456,7 @@ CTE_01_MEMBERS AS (
     SELECT DISTINCT pr.patient_id AS patient_id
     FROM HEALTHCARE_EHR.procedures pr
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-      ON TRIM(pr.code) = TRIM(vsc.code)
+      ON pr.code = vsc.code
      AND TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.1421'
     WHERE pr.code_system = 'SNOMED-CT'
       AND CAST(pr.start_ts AT TIME ZONE 'GMT' AS DATE)
@@ -468,7 +468,7 @@ CTE_01_MEMBERS AS (
     SELECT DISTINCT ob.patient_id AS patient_id
     FROM HEALTHCARE_EHR.observations ob
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-      ON TRIM(ob.code) = TRIM(vsc.code)
+      ON ob.code = vsc.code
      AND TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.1959'
     WHERE CAST(ob.observation_ts AT TIME ZONE 'GMT' AS DATE)
             BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
@@ -479,7 +479,7 @@ CTE_01_MEMBERS AS (
     SELECT DISTINCT ob.patient_id AS patient_id
     FROM HEALTHCARE_EHR.observations ob
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-      ON TRIM(ob.code) = TRIM(vsc.code)
+      ON ob.code = vsc.code
      AND TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.1749'
     WHERE CAST(ob.observation_ts AT TIME ZONE 'GMT' AS DATE)
             BETWEEN DATE '2023-01-01' AND DATE '2025-12-31'
@@ -577,7 +577,7 @@ Example questions this supports:
 - `AT TIME ZONE` is valid only on TIMESTAMP columns (`*_ts`): `CAST(col AT TIME ZONE 'GMT' AS DATE)`. DATE columns (`*_date`) compare directly (error 5407).
 - `NTILE` is not supported. Use `CASE WHEN` bands or `QUANTILE(n, col)`.
 - Wrap rate denominators in `NULLIFZERO()`; no `ORDER BY` inside CTEs.
-- `patient_id` and `encounter_id` are stored trimmed: join and filter on them directly, never `TRIM()` them (a function on the key defeats the primary index / row-hash join). Other keys and codes (payer_id, code, ...) are still wrapped in `TRIM()` in joins.
+- Never wrap a join key in `TRIM()` (or any function): it defeats primary-index, row-hash and partition use. Join columns directly. `patient_id` and `encounter_id` are stored trimmed. `TRIM()` is fine on a column compared with a literal (a filter, not a join).
 - Do not use reserved words as aliases or output names (`value`, `year`, `month`, `day`, `level`, `rank`, `row`, `type`, `count`, `zone`, `title`, `summary`, `lt`, `gt`, `eq`, `in`, `is`, ...). Use `member_count`, `age_band`, etc.
 - Dates in the certified SQL are literals for the measurement year; keep them when reusing the spine.
 
@@ -616,12 +616,12 @@ CODE RESOLUTION — two allowed patterns:
 1. PREFERRED: use the literal codes under "=== RESOLVED CODE SETS ===" as IN-lists.
 2. If a value set is too large to inline, JOIN to the codes table by OID + year:
        JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-         ON TRIM(clinical.code) = TRIM(vsc.code)
+         ON clinical.code = vsc.code
         AND TRIM(vsc.value_set_oid) = '<value_set_oid from Spec 3>'
         AND vsc.measurement_year = <YEAR>
    or resolve every OID for a concept via HEALTHCARE_reference.measure_to_value_set first:
        JOIN HEALTHCARE_reference.measure_to_value_set mt
          ON mt.measure_id='<MID>' AND mt.measurement_year=<YEAR> AND mt.concept_id='<CONCEPT>'
        JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-         ON TRIM(vsc.value_set_oid) = TRIM(mt.value_set_oid)
+         ON vsc.value_set_oid = mt.value_set_oid
         AND vsc.measurement_year = mt.measurement_year
