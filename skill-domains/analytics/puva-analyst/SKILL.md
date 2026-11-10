@@ -35,7 +35,7 @@ Supports Bank Indonesia analysts who monitor the money market and FX market (Pas
 All PUVA data in this environment is synthetic, on fictional banks, and aligned with real BI press releases from Q1 2026.
 
 ## When to Use
-- Questions about bank positions or transactions: PDN and rasio PDN, SRBI, PUAB, Operasi Moneter Rupiah and Valas, repo, valas derivatif (spot, forward, swap), DPK and kredit, per bank (sandi bank), per date or per period.
+- Questions about bank positions and transactions: PDN and rasio PDN, SRBI, PUAB, Operasi Moneter Rupiah and Valas, repo, valas derivatif (spot, forward, swap), DPK and kredit, per bank (sandi bank), per date or per period.
 - Questions about BI policy and releases: RDG decisions, BI-Rate, INDONIA, kurs Rupiah, cadangan devisa, market events in Q1 2026.
 - Questions that combine both, e.g. a trend in the data and the policy or geopolitical context behind it.
 - Do NOT use for general SQL help, Teradata administration, or questions about other central banks. Answer those without this skill.
@@ -120,7 +120,7 @@ If the bank, period or instrument is ambiguous, make a reasonable assumption, st
 
 | Error | Cause | Fix |
 |---|---|---|
-| Monthly "total PDN" many times too large | Daily positions summed across dates | Take the position on the last business day of March |
+| Monthly "total PDN" many times too large | Daily positions summed across dates | Take the position on the last business day of the period |
 | A ratio above 20% described as "mendekati batas 20%" | Limit language not checked against the number | Above the limit is a breach: "melampaui batas" |
 | Geopolitical trigger missing from the explanation | Search events only inside the asked window | Also search about two weeks before the window |
 | Explanation is "revaluasi" or "ekspektasi kebijakan" with no evidence | Driver not checked in the data | Compare PDN, MODAL, FX buy/sell by counterparty |
