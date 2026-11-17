@@ -383,7 +383,7 @@ CTE_01_MEMBERS AS (
         SELECT 1
         FROM HEALTHCARE_EHR.conditions c
         JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-          ON c.code = vsc.code                              -- [SN-07][AE-04]
+          ON vsc.measurement_year = 2025 AND c.code = vsc.code                              -- [SN-07][AE-04]
          AND vsc.value_set_oid IN ('2.16.840.1.113883.3.464.1004.1450',
                                           '2.16.840.1.113883.3.464.1004.2225')
         WHERE c.patient_id = d.patient_id
@@ -394,7 +394,7 @@ CTE_01_MEMBERS AS (
         SELECT 1
         FROM HEALTHCARE_EHR.procedures p
         JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-          ON p.code = vsc.code
+          ON vsc.measurement_year = 2025 AND p.code = vsc.code
          AND vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.2224'
         WHERE p.patient_id = d.patient_id
           AND p.code_system = 'SNOMED-CT'
@@ -406,7 +406,7 @@ CTE_01_MEMBERS AS (
         SELECT 1
         FROM HEALTHCARE_EHR.conditions c2
         JOIN HEALTHCARE_reference.measure_value_set_codes vsc2
-          ON c2.code = vsc2.code
+          ON vsc2.measurement_year = 2025 AND c2.code = vsc2.code
          AND vsc2.value_set_oid = '2.16.840.1.113883.3.464.1004.1065'
         WHERE c2.patient_id = d.patient_id
           AND c2.code_system = 'SNOMED-CT'
@@ -418,7 +418,7 @@ CTE_01_MEMBERS AS (
         SELECT 1
         FROM HEALTHCARE_EHR.procedures p2
         JOIN HEALTHCARE_reference.measure_value_set_codes vsc3
-          ON p2.code = vsc3.code
+          ON vsc3.measurement_year = 2025 AND p2.code = vsc3.code
          AND vsc3.value_set_oid = '2.16.840.1.113883.3.464.1004.1250'
         WHERE p2.patient_id = d.patient_id
           AND p2.code_system = 'SNOMED-CT'
@@ -430,7 +430,7 @@ CTE_01_MEMBERS AS (
     SELECT DISTINCT pr.patient_id AS patient_id
     FROM HEALTHCARE_EHR.procedures pr
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-      ON pr.code = vsc.code
+      ON vsc.measurement_year = 2025 AND pr.code = vsc.code
      AND vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.1064'
     WHERE pr.code_system = 'SNOMED-CT'
       AND (pr.start_ts >= TIMESTAMP '2016-01-01 00:00:00+00:00' AND pr.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
@@ -441,7 +441,7 @@ CTE_01_MEMBERS AS (
     SELECT DISTINCT pr.patient_id AS patient_id
     FROM HEALTHCARE_EHR.procedures pr
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-      ON pr.code = vsc.code
+      ON vsc.measurement_year = 2025 AND pr.code = vsc.code
      AND vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.1102'
     WHERE pr.code_system = 'SNOMED-CT'
       AND (pr.start_ts >= TIMESTAMP '2021-01-01 00:00:00+00:00' AND pr.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
@@ -452,7 +452,7 @@ CTE_01_MEMBERS AS (
     SELECT DISTINCT pr.patient_id AS patient_id
     FROM HEALTHCARE_EHR.procedures pr
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-      ON pr.code = vsc.code
+      ON vsc.measurement_year = 2025 AND pr.code = vsc.code
      AND vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.1421'
     WHERE pr.code_system = 'SNOMED-CT'
       AND (pr.start_ts >= TIMESTAMP '2021-01-01 00:00:00+00:00' AND pr.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
@@ -463,7 +463,7 @@ CTE_01_MEMBERS AS (
     SELECT DISTINCT ob.patient_id AS patient_id
     FROM HEALTHCARE_EHR.observations ob
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-      ON ob.code = vsc.code
+      ON vsc.measurement_year = 2025 AND ob.code = vsc.code
      AND vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.1959'
     WHERE (ob.observation_ts >= TIMESTAMP '2025-01-01 00:00:00+00:00' AND ob.observation_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
     -- [Spec2:NUM_FOBT:MAPPED] [AE-05]
@@ -473,7 +473,7 @@ CTE_01_MEMBERS AS (
     SELECT DISTINCT ob.patient_id AS patient_id
     FROM HEALTHCARE_EHR.observations ob
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-      ON ob.code = vsc.code
+      ON vsc.measurement_year = 2025 AND ob.code = vsc.code
      AND vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.1749'
     WHERE (ob.observation_ts >= TIMESTAMP '2023-01-01 00:00:00+00:00' AND ob.observation_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
     -- [Spec2:NUM_FIT_DNA:MAPPED] [AE-05]

@@ -350,7 +350,7 @@ WITH CTE_01_MEMBERS AS (
     WHERE NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.procedures pr
         INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-            ON pr.code = vsc.code AND vsc.code_system = 'SNOMED CT US Edition'
+            ON vsc.measurement_year = 2025 AND pr.code = vsc.code AND vsc.code_system = 'SNOMED CT US Edition'
            AND vsc.value_set_oid IN ('2.16.840.1.113883.3.464.1004.1761','2.16.840.1.113883.3.464.1004.1762')
         WHERE pr.patient_id = d.patient_id
           AND (pr.start_ts >= TIMESTAMP '2025-01-01 00:00:00+00:00' AND pr.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
@@ -358,7 +358,7 @@ WITH CTE_01_MEMBERS AS (
     AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.conditions co
         INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-            ON co.code = vsc.code AND vsc.code_system = 'SNOMED CT US Edition'
+            ON vsc.measurement_year = 2025 AND co.code = vsc.code AND vsc.code_system = 'SNOMED CT US Edition'
            AND vsc.value_set_oid IN ('2.16.840.1.113883.3.464.1004.1761','2.16.840.1.113883.3.464.1004.1762')
         WHERE co.patient_id = d.patient_id
           AND co.start_date <= DATE '2025-12-31'
@@ -367,7 +367,7 @@ WITH CTE_01_MEMBERS AS (
     AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.conditions co2
         INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc2
-            ON co2.code = vsc2.code AND vsc2.code_system = 'SNOMED CT US Edition'
+            ON vsc2.measurement_year = 2025 AND co2.code = vsc2.code AND vsc2.code_system = 'SNOMED CT US Edition'
            AND vsc2.value_set_oid IN
                ('2.16.840.1.113883.3.464.1004.1450','2.16.840.1.113883.3.464.1004.2225','2.16.840.1.113883.3.464.1004.2224')
         WHERE co2.patient_id = d.patient_id
@@ -380,13 +380,13 @@ WITH CTE_01_MEMBERS AS (
         d.age_at_anchor >= 66                                                     -- [Spec1:§7.3/7.4/7.5 age gate]
         AND (SELECT COUNT(DISTINCT co3.start_date) FROM HEALTHCARE_EHR.conditions co3
              INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc3
-                 ON co3.code = vsc3.code AND vsc3.code_system = 'SNOMED CT US Edition'
+                 ON vsc3.measurement_year = 2025 AND co3.code = vsc3.code AND vsc3.code_system = 'SNOMED CT US Edition'
                 AND vsc3.value_set_oid IN ('2.16.840.1.113883.3.464.1004.1531','2.16.840.1.113883.3.464.1004.1533')
              WHERE co3.patient_id = d.patient_id
                AND co3.start_date BETWEEN DATE '2025-01-01' AND DATE '2025-12-31') >= 2
         AND (SELECT COUNT(DISTINCT co4.start_date) FROM HEALTHCARE_EHR.conditions co4
              INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc4
-                 ON co4.code = vsc4.code AND vsc4.code_system = 'SNOMED CT US Edition'
+                 ON vsc4.measurement_year = 2025 AND co4.code = vsc4.code AND vsc4.code_system = 'SNOMED CT US Edition'
                 AND vsc4.value_set_oid = '2.16.840.1.113883.3.464.1004.1465'
              WHERE co4.patient_id = d.patient_id
                AND co4.start_date BETWEEN DATE '2025-01-01' AND DATE '2025-12-31') >= 2
@@ -394,31 +394,31 @@ WITH CTE_01_MEMBERS AS (
     AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.conditions co5
         INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc5
-            ON co5.code = vsc5.code AND vsc5.code_system = 'SNOMED CT US Edition'
+            ON vsc5.measurement_year = 2025 AND co5.code = vsc5.code AND vsc5.code_system = 'SNOMED CT US Edition'
            AND vsc5.value_set_oid IN ('2.16.840.1.113883.3.464.1004.1042','2.16.840.1.113883.3.464.1004.1331')
         WHERE co5.patient_id = d.patient_id AND co5.start_date <= DATE '2025-12-31'
     )                                                                              -- [Spec2:EXCL_MASTECTOMY:DOMAIN_GAP]
     AND NOT (
         EXISTS (SELECT 1 FROM HEALTHCARE_EHR.conditions coL
                 INNER JOIN HEALTHCARE_reference.measure_value_set_codes vscL
-                    ON coL.code = vscL.code AND vscL.code_system = 'SNOMED CT US Edition'
+                    ON vscL.measurement_year = 2025 AND coL.code = vscL.code AND vscL.code_system = 'SNOMED CT US Edition'
                    AND vscL.value_set_oid = '2.16.840.1.113883.3.464.1004.1334'
                 WHERE coL.patient_id = d.patient_id AND coL.start_date <= DATE '2025-12-31')
         AND EXISTS (SELECT 1 FROM HEALTHCARE_EHR.conditions coR
                 INNER JOIN HEALTHCARE_reference.measure_value_set_codes vscR
-                    ON coR.code = vscR.code AND vscR.code_system = 'SNOMED CT US Edition'
+                    ON vscR.measurement_year = 2025 AND coR.code = vscR.code AND vscR.code_system = 'SNOMED CT US Edition'
                    AND vscR.value_set_oid = '2.16.840.1.113883.3.464.1004.1335'
                 WHERE coR.patient_id = d.patient_id AND coR.start_date <= DATE '2025-12-31')
     )                                                                              -- [Spec2:EXCL_MASTECTOMY:DOMAIN_GAP] EXCL_MAST_L_R
     AND NOT (
         EXISTS (SELECT 1 FROM HEALTHCARE_EHR.conditions coAL
                 INNER JOIN HEALTHCARE_reference.measure_value_set_codes vscAL
-                    ON coAL.code = vscAL.code AND vscAL.code_system = 'SNOMED CT US Edition'
+                    ON vscAL.measurement_year = 2025 AND coAL.code = vscAL.code AND vscAL.code_system = 'SNOMED CT US Edition'
                    AND vscAL.value_set_oid = '2.16.840.1.113883.3.464.1004.1329'
                 WHERE coAL.patient_id = d.patient_id)
         AND EXISTS (SELECT 1 FROM HEALTHCARE_EHR.conditions coAR
                 INNER JOIN HEALTHCARE_reference.measure_value_set_codes vscAR
-                    ON coAR.code = vscAR.code AND vscAR.code_system = 'SNOMED CT US Edition'
+                    ON vscAR.measurement_year = 2025 AND coAR.code = vscAR.code AND vscAR.code_system = 'SNOMED CT US Edition'
                    AND vscAR.value_set_oid = '2.16.840.1.113883.3.464.1004.1330'
                 WHERE coAR.patient_id = d.patient_id)
     )                                                                              -- [Spec2:EXCL_MASTECTOMY:DOMAIN_GAP] EXCL_MAST_ABSENT
@@ -429,7 +429,7 @@ WITH CTE_01_MEMBERS AS (
     SELECT DISTINCT pr.patient_id AS patient_id
     FROM HEALTHCARE_EHR.procedures pr
     INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc
-        ON pr.code = vsc.code AND vsc.code_system = 'SNOMED CT US Edition'
+        ON vsc.measurement_year = 2025 AND pr.code = vsc.code AND vsc.code_system = 'SNOMED CT US Edition'
        AND vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.1168'          -- [Spec2:NUM_MAMMOGRAM:MAPPED]
     WHERE (pr.start_ts >= TIMESTAMP '2024-01-01 00:00:00+00:00' AND pr.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')  -- [Spec2:NUM_DATE_WINDOW:MAPPED]
 
@@ -438,7 +438,7 @@ WITH CTE_01_MEMBERS AS (
     SELECT DISTINCT ob.patient_id AS patient_id
     FROM HEALTHCARE_EHR.observations ob
     INNER JOIN HEALTHCARE_reference.measure_value_set_codes vsc2
-        ON ob.code = vsc2.code AND vsc2.code_system = 'LOINC'
+        ON vsc2.measurement_year = 2025 AND ob.code = vsc2.code AND vsc2.code_system = 'LOINC'
        AND vsc2.value_set_oid = '2.16.840.1.113883.3.464.1004.1168'         -- [Spec2:NUM_MAMMOGRAM:MAPPED]
     WHERE (ob.observation_ts >= TIMESTAMP '2024-01-01 00:00:00+00:00' AND ob.observation_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')  -- [Spec2:NUM_DATE_WINDOW:MAPPED]
 )
