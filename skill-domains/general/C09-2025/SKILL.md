@@ -371,7 +371,7 @@ CTE_01_MEMBERS AS (
           AND c.code_system = 'SNOMED-CT'
           AND c.code IN (
               SELECT vsc.code FROM HEALTHCARE_reference.measure_value_set_codes vsc
-              WHERE TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.1077'
+              WHERE vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.1077'
                 AND vsc.measurement_year = 2025)
           AND c.start_date BETWEEN DATE '2024-01-01' AND DATE '2025-12-31'
     )
@@ -385,7 +385,7 @@ CTE_01_MEMBERS AS (
         SELECT 1 FROM HEALTHCARE_EHR.encounters exc_e
         WHERE exc_e.patient_id = d.patient_id
           AND LOWER(exc_e.encounter_class) = 'hospice'
-          AND CAST(exc_e.start_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
+          AND (exc_e.start_ts >= TIMESTAMP '2025-01-01 00:00:00+00:00' AND exc_e.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
     )
     AND NOT EXISTS (
         SELECT 1 FROM HEALTHCARE_EHR.procedures exc_p
@@ -393,9 +393,9 @@ CTE_01_MEMBERS AS (
           AND exc_p.code_system = 'SNOMED-CT'
           AND exc_p.code IN (
               SELECT vsc.code FROM HEALTHCARE_reference.measure_value_set_codes vsc
-              WHERE TRIM(vsc.value_set_oid) IN ('2.16.840.1.113883.3.464.1004.1761','2.16.840.1.113883.3.464.1004.1762')
+              WHERE vsc.value_set_oid IN ('2.16.840.1.113883.3.464.1004.1761','2.16.840.1.113883.3.464.1004.1762')
                 AND vsc.measurement_year = 2025)
-          AND CAST(exc_p.start_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
+          AND (exc_p.start_ts >= TIMESTAMP '2025-01-01 00:00:00+00:00' AND exc_p.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
     )
     -- [Spec2:EXCL_HOSPICE:MAPPED]
 
@@ -413,9 +413,9 @@ CTE_01_MEMBERS AS (
           AND exc_pal.code_system = 'SNOMED-CT'
           AND exc_pal.code IN (
               SELECT vsc.code FROM HEALTHCARE_reference.measure_value_set_codes vsc
-              WHERE TRIM(vsc.value_set_oid) IN ('2.16.840.1.113883.3.464.1004.1450','2.16.840.1.113883.3.464.1004.2225','2.16.840.1.113883.3.464.1004.2224')
+              WHERE vsc.value_set_oid IN ('2.16.840.1.113883.3.464.1004.1450','2.16.840.1.113883.3.464.1004.2225','2.16.840.1.113883.3.464.1004.2224')
                 AND vsc.measurement_year = 2025)
-          AND CAST(exc_pal.start_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
+          AND (exc_pal.start_ts >= TIMESTAMP '2025-01-01 00:00:00+00:00' AND exc_pal.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
     )
     -- [Spec2:EXCL_PALLIATIVE:MAPPED]
 
@@ -428,7 +428,7 @@ CTE_01_MEMBERS AS (
               AND exc_f.code_system = 'SNOMED-CT'
               AND exc_f.code IN (
                   SELECT vsc.code FROM HEALTHCARE_reference.measure_value_set_codes vsc
-                  WHERE TRIM(vsc.value_set_oid) IN ('2.16.840.1.113883.3.464.1004.1531','2.16.840.1.113883.3.464.1004.1533')
+                  WHERE vsc.value_set_oid IN ('2.16.840.1.113883.3.464.1004.1531','2.16.840.1.113883.3.464.1004.1533')
                     AND vsc.measurement_year = 2025)
               AND exc_f.start_date BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
         ) >= 2
@@ -441,7 +441,7 @@ CTE_01_MEMBERS AS (
                       AND exc_ai.code_system = 'SNOMED-CT'
                       AND exc_ai.code IN (
                           SELECT vsc.code FROM HEALTHCARE_reference.measure_value_set_codes vsc
-                          WHERE TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.1465'
+                          WHERE vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.1465'
                             AND vsc.measurement_year = 2025)
                       AND exc_ai.start_date BETWEEN DATE '2024-01-01' AND DATE '2025-12-31'
                 )
@@ -451,9 +451,9 @@ CTE_01_MEMBERS AS (
                     WHERE exc_v.patient_id = d.patient_id
                       AND exc_v.code IN (
                           SELECT vsc.code FROM HEALTHCARE_reference.measure_value_set_codes vsc
-                          WHERE TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.2474'
+                          WHERE vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.2474'
                             AND vsc.measurement_year = 2025)
-                      AND CAST(exc_v.start_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2024-01-01' AND DATE '2025-12-31'
+                      AND (exc_v.start_ts >= TIMESTAMP '2024-01-01 00:00:00+00:00' AND exc_v.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
                 ) >= 2
             )
             OR
@@ -462,14 +462,14 @@ CTE_01_MEMBERS AS (
                     SELECT 1 FROM HEALTHCARE_EHR.encounters exc_ae
                     WHERE exc_ae.patient_id = d.patient_id
                       AND LOWER(exc_ae.encounter_class) = 'inpatient'
-                      AND CAST(exc_ae.start_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2024-01-01' AND DATE '2025-12-31'
+                      AND (exc_ae.start_ts >= TIMESTAMP '2024-01-01 00:00:00+00:00' AND exc_ae.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
                       AND EXISTS (
                           SELECT 1 FROM HEALTHCARE_EHR.conditions exc_ai2
                           WHERE exc_ai2.patient_id = d.patient_id
                             AND exc_ai2.code_system = 'SNOMED-CT'
                             AND exc_ai2.code IN (
                                 SELECT vsc.code FROM HEALTHCARE_reference.measure_value_set_codes vsc
-                                WHERE TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.1465'
+                                WHERE vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.1465'
                                   AND vsc.measurement_year = 2025)
                             AND exc_ai2.start_date BETWEEN DATE '2024-01-01' AND DATE '2025-12-31'
                       )
@@ -481,14 +481,14 @@ CTE_01_MEMBERS AS (
                     SELECT 1 FROM HEALTHCARE_EHR.encounters exc_ad
                     WHERE exc_ad.patient_id = d.patient_id
                       AND LOWER(exc_ad.encounter_class) = 'inpatient'
-                      AND CAST(exc_ad.end_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2024-01-01' AND DATE '2025-12-31'
+                      AND (exc_ad.end_ts >= TIMESTAMP '2024-01-01 00:00:00+00:00' AND exc_ad.end_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
                       AND EXISTS (
                           SELECT 1 FROM HEALTHCARE_EHR.conditions exc_ai3
                           WHERE exc_ai3.patient_id = d.patient_id
                             AND exc_ai3.code_system = 'SNOMED-CT'
                             AND exc_ai3.code IN (
                                 SELECT vsc.code FROM HEALTHCARE_reference.measure_value_set_codes vsc
-                                WHERE TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.1465'
+                                WHERE vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.1465'
                                   AND vsc.measurement_year = 2025)
                             AND exc_ai3.start_date BETWEEN DATE '2024-01-01' AND DATE '2025-12-31'
                       )
@@ -504,9 +504,9 @@ CTE_01_MEMBERS AS (
     WHERE p.code_system = 'SNOMED-CT'
       AND p.code IN (
           SELECT vsc.code FROM HEALTHCARE_reference.measure_value_set_codes vsc
-          WHERE TRIM(vsc.value_set_oid) IN ('2.16.840.1.113883.3.464.1004.2550','2.16.840.1.113883.3.464.1004.2584')
+          WHERE vsc.value_set_oid IN ('2.16.840.1.113883.3.464.1004.2550','2.16.840.1.113883.3.464.1004.2584')
             AND vsc.measurement_year = 2025)
-      AND CAST(p.start_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
+      AND (p.start_ts >= TIMESTAMP '2025-01-01 00:00:00+00:00' AND p.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
     -- [Spec2:NUM_EYE_EXAM:MAPPED] Retinal Eye Exams / Retinal Imaging [AE-01]
 )
 ,CTE_NUM_EVENTS_OBS AS (
@@ -514,9 +514,9 @@ CTE_01_MEMBERS AS (
     FROM HEALTHCARE_EHR.observations o
     WHERE o.code IN (
           SELECT vsc.code FROM HEALTHCARE_reference.measure_value_set_codes vsc
-          WHERE TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.2616'
+          WHERE vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.2616'
             AND vsc.measurement_year = 2025)
-      AND CAST(o.observation_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
+      AND (o.observation_ts >= TIMESTAMP '2025-01-01 00:00:00+00:00' AND o.observation_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
     -- [Spec2:NUM_EYE_EXAM:MAPPED] Autonomous Eye Exam Result or Finding [SN-10]
 )
 ,CTE_05_NUMERATOR AS (
@@ -563,11 +563,12 @@ Assemble: certified spine verbatim, then your tail (`, extra_cte AS (...)` and a
 - **The spine is frozen.** Reuse the certified CTEs verbatim through `CTE_05_NUMERATOR`; never modify, rebuild or re-derive eligibility, exclusions, codes or enrollment. Add only a tail (extra CTEs and a final SELECT) that reads from the spine, so every result is a subset or aggregation of the certified population.
 - **Follow the rate model above exactly.** It states which CTE is the denominator and how the numerator flag is formed for this measure.
 - **Enrichment** (a dimension not already on the spine, such as provider, facility or payer): `LEFT JOIN` on the member key, one row per member. Never `INNER JOIN`, and never filter on the joined table, or the denominator changes.
+- **Member attributes in a tail** (age, county, ...): `LEFT JOIN` the base table (e.g. `patients`) on the member key. Do not re-reference `CTE_04_EXCLUSIONS` or another spine CTE just to pick up a column; that re-evaluates the whole exclusion chain a second time.
 - **Names:** use only columns listed in the spine structure and tables you have looked up (e.g. with `base_columnDescription`). Never guess a column; fully qualify tables as `db.table`.
 - **Never invent numbers.** Certified rate, star band and cut points come from this file. Gap-to-next-star math uses only the cut points above.
 - **Questions that redefine the measure** (different age range, codes, enrollment, exclusions) are scenario analysis, not analytics. Say so instead of altering the certified logic.
 - **Reconcile:** an overall rate computed from your tail must equal the certified denominator, numerator and rate.
-- Validate with `EXPLAIN` before running anything large; use `TOP n` while exploring.
+- Validate with `EXPLAIN` before running anything large and check that it reads "N partitions", not "all partitions", on the big tables. Use `TOP n` while exploring."""
 
 Example questions this supports:
 - Rate by age band, gender, race, county or other member attribute on the spine, with the gap to the next star band.
@@ -586,7 +587,7 @@ Example questions this supports:
 ## Teradata notes
 
 - `CASE WHEN EXISTS (...)` is illegal (error 3771). Use a `LEFT JOIN` and test `IS NOT NULL`.
-- `AT TIME ZONE` is valid only on TIMESTAMP columns (`*_ts`): `CAST(col AT TIME ZONE 'GMT' AS DATE)`. DATE columns (`*_date`) compare directly (error 5407).
+- Never wrap a partitioning or filter column in a function. `*_ts` columns are `TIMESTAMP WITH TIME ZONE` and are the RANGE_N partitioning key on the large tables (observations, procedures, ...). `CAST(col AT TIME ZONE 'GMT' AS DATE) BETWEEN d1 AND d2` is legal but non-sargable: it scans every yearly partition. Filter with a half-open timestamp range instead: `col >= TIMESTAMP 'yyyy-mm-dd 00:00:00+00:00' AND col < TIMESTAMP '<day after d2> 00:00:00+00:00'`. Keep `CAST(col AT TIME ZONE 'GMT' AS DATE)` for SELECT lists and grouping only. DATE columns (`*_date`) compare directly to DATE literals; never use `AT TIME ZONE` on a DATE (error 5407).
 - `NTILE` is not supported. Use `CASE WHEN` bands or `QUANTILE(n, col)`.
 - Wrap rate denominators in `NULLIFZERO()`; no `ORDER BY` inside CTEs.
 - Never wrap a join key in `TRIM()` (or any function): it defeats primary-index, row-hash and partition use. Join columns directly. `patient_id` and `encounter_id` are stored trimmed. `TRIM()` is fine on a column compared with a literal (a filter, not a join).
@@ -629,7 +630,7 @@ CODE RESOLUTION — two allowed patterns:
 2. If a value set is too large to inline, JOIN to the codes table by OID + year:
        JOIN HEALTHCARE_reference.measure_value_set_codes vsc
          ON clinical.code = vsc.code
-        AND TRIM(vsc.value_set_oid) = '<value_set_oid from Spec 3>'
+        AND vsc.value_set_oid = '<value_set_oid from Spec 3>'
         AND vsc.measurement_year = <YEAR>
    or resolve every OID for a concept via HEALTHCARE_reference.measure_to_value_set first:
        JOIN HEALTHCARE_reference.measure_to_value_set mt

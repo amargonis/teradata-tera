@@ -451,7 +451,7 @@ CTE_00_IESD AS (
                 WHERE value_set_oid IN ('2.16.840.1.113883.3.464.1004.1761','2.16.840.1.113883.3.464.1004.1762')
                   AND code_system = 'SNOMED-CT'
                   AND measurement_year = 2025)
-          AND CAST(eh.start_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
+          AND (eh.start_ts >= TIMESTAMP '2025-01-01 00:00:00+00:00' AND eh.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
     )   -- [Spec2:EXCL_HOSPICE:DOMAIN_GAP:CODE_SYSTEM] [SN-10]
       AND (d.death_date IS NULL
            OR d.death_date NOT BETWEEN DATE '2025-01-01' AND DATE '2025-12-31')   -- [Spec2:EXCL_DEATH:MAPPED]
@@ -496,8 +496,8 @@ CTE_00_IESD AS (
                                 WHERE value_set_oid = '2.16.840.1.113883.3.464.1004.1465'
                                   AND code_system = 'SNOMED-CT'
                                   AND measurement_year = 2025))
-                  AND (CAST(ai.start_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2024-01-01' AND DATE '2025-12-31'
-                       OR CAST(ai.end_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2024-01-01' AND DATE '2025-12-31')
+                  AND ((ai.start_ts >= TIMESTAMP '2024-01-01 00:00:00+00:00' AND ai.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
+                       OR (ai.end_ts >= TIMESTAMP '2024-01-01 00:00:00+00:00' AND ai.end_ts < TIMESTAMP '2026-01-01 00:00:00+00:00'))
             )
             OR (
                 SELECT COUNT(DISTINCT CAST(v.start_ts AT TIME ZONE 'GMT' AS DATE))
@@ -516,7 +516,7 @@ CTE_00_IESD AS (
                                 WHERE value_set_oid = '2.16.840.1.113883.3.464.1004.1465'
                                   AND code_system = 'SNOMED-CT'
                                   AND measurement_year = 2025))
-                  AND CAST(v.start_ts AT TIME ZONE 'GMT' AS DATE) BETWEEN DATE '2024-01-01' AND DATE '2025-12-31'
+                  AND (v.start_ts >= TIMESTAMP '2024-01-01 00:00:00+00:00' AND v.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
             ) >= 2
             -- criterion (d) dementia medication omitted — [Spec2:EXCL_ADVANCED_ILLNESS:DOMAIN_GAP] [AE-09]
         )
@@ -621,11 +621,12 @@ Assemble: certified spine verbatim, then your tail (`, extra_cte AS (...)` and a
 - **The spine is frozen.** Reuse the certified CTEs verbatim through `CTE_05_NUMERATOR`; never modify, rebuild or re-derive eligibility, exclusions, codes or enrollment. Add only a tail (extra CTEs and a final SELECT) that reads from the spine, so every result is a subset or aggregation of the certified population.
 - **Follow the rate model above exactly.** It states which CTE is the denominator and how the numerator flag is formed for this measure.
 - **Enrichment** (a dimension not already on the spine, such as provider, facility or payer): `LEFT JOIN` on the member key, one row per member. Never `INNER JOIN`, and never filter on the joined table, or the denominator changes.
+- **Member attributes in a tail** (age, county, ...): `LEFT JOIN` the base table (e.g. `patients`) on the member key. Do not re-reference `CTE_04_EXCLUSIONS` or another spine CTE just to pick up a column; that re-evaluates the whole exclusion chain a second time.
 - **Names:** use only columns listed in the spine structure and tables you have looked up (e.g. with `base_columnDescription`). Never guess a column; fully qualify tables as `db.table`.
 - **Never invent numbers.** Certified rate, star band and cut points come from this file. Gap-to-next-star math uses only the cut points above.
 - **Questions that redefine the measure** (different age range, codes, enrollment, exclusions) are scenario analysis, not analytics. Say so instead of altering the certified logic.
 - **Reconcile:** an overall rate computed from your tail must equal the certified denominator, numerator and rate.
-- Validate with `EXPLAIN` before running anything large; use `TOP n` while exploring.
+- Validate with `EXPLAIN` before running anything large and check that it reads "N partitions", not "all partitions", on the big tables. Use `TOP n` while exploring."""
 
 Example questions this supports:
 - Rate by age band, gender, race, county or other member attribute on the spine, with the gap to the next star band.
@@ -644,7 +645,7 @@ Example questions this supports:
 ## Teradata notes
 
 - `CASE WHEN EXISTS (...)` is illegal (error 3771). Use a `LEFT JOIN` and test `IS NOT NULL`.
-- `AT TIME ZONE` is valid only on TIMESTAMP columns (`*_ts`): `CAST(col AT TIME ZONE 'GMT' AS DATE)`. DATE columns (`*_date`) compare directly (error 5407).
+- Never wrap a partitioning or filter column in a function. `*_ts` columns are `TIMESTAMP WITH TIME ZONE` and are the RANGE_N partitioning key on the large tables (observations, procedures, ...). `CAST(col AT TIME ZONE 'GMT' AS DATE) BETWEEN d1 AND d2` is legal but non-sargable: it scans every yearly partition. Filter with a half-open timestamp range instead: `col >= TIMESTAMP 'yyyy-mm-dd 00:00:00+00:00' AND col < TIMESTAMP '<day after d2> 00:00:00+00:00'`. Keep `CAST(col AT TIME ZONE 'GMT' AS DATE)` for SELECT lists and grouping only. DATE columns (`*_date`) compare directly to DATE literals; never use `AT TIME ZONE` on a DATE (error 5407).
 - `NTILE` is not supported. Use `CASE WHEN` bands or `QUANTILE(n, col)`.
 - Wrap rate denominators in `NULLIFZERO()`; no `ORDER BY` inside CTEs.
 - Never wrap a join key in `TRIM()` (or any function): it defeats primary-index, row-hash and partition use. Join columns directly. `patient_id` and `encounter_id` are stored trimmed. `TRIM()` is fine on a column compared with a literal (a filter, not a join).
@@ -687,7 +688,7 @@ CODE RESOLUTION — two allowed patterns:
 2. If a value set is too large to inline, JOIN to the codes table by OID + year:
        JOIN HEALTHCARE_reference.measure_value_set_codes vsc
          ON clinical.code = vsc.code
-        AND TRIM(vsc.value_set_oid) = '<value_set_oid from Spec 3>'
+        AND vsc.value_set_oid = '<value_set_oid from Spec 3>'
         AND vsc.measurement_year = <YEAR>
    or resolve every OID for a concept via HEALTHCARE_reference.measure_to_value_set first:
        JOIN HEALTHCARE_reference.measure_to_value_set mt

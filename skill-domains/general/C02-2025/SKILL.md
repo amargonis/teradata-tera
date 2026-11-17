@@ -375,8 +375,7 @@ CTE_01_MEMBERS AS (
         FROM HEALTHCARE_EHR.encounters e
         WHERE e.patient_id = d.patient_id                  -- [SN-06]
           AND e.encounter_class = 'hospice'
-          AND CAST(e.start_ts AT TIME ZONE 'GMT' AS DATE)
-                BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'        -- [SN-05]
+          AND (e.start_ts >= TIMESTAMP '2025-01-01 00:00:00+00:00' AND e.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')        -- [SN-05]
     )
 
     -- EXCL_PALLIATIVE — [Spec2:EXCL_PALLIATIVE:DOMAIN_GAP:CODE_SYSTEM]
@@ -385,7 +384,7 @@ CTE_01_MEMBERS AS (
         FROM HEALTHCARE_EHR.conditions c
         JOIN HEALTHCARE_reference.measure_value_set_codes vsc
           ON c.code = vsc.code                              -- [SN-07][AE-04]
-         AND TRIM(vsc.value_set_oid) IN ('2.16.840.1.113883.3.464.1004.1450',
+         AND vsc.value_set_oid IN ('2.16.840.1.113883.3.464.1004.1450',
                                           '2.16.840.1.113883.3.464.1004.2225')
         WHERE c.patient_id = d.patient_id
           AND c.code_system = 'SNOMED-CT'
@@ -396,11 +395,10 @@ CTE_01_MEMBERS AS (
         FROM HEALTHCARE_EHR.procedures p
         JOIN HEALTHCARE_reference.measure_value_set_codes vsc
           ON p.code = vsc.code
-         AND TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.2224'
+         AND vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.2224'
         WHERE p.patient_id = d.patient_id
           AND p.code_system = 'SNOMED-CT'
-          AND CAST(p.start_ts AT TIME ZONE 'GMT' AS DATE)
-                BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
+          AND (p.start_ts >= TIMESTAMP '2025-01-01 00:00:00+00:00' AND p.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
     )
 
     -- EXCL_COLORECTAL_CA — [Spec2:EXCL_COLORECTAL_CA:DOMAIN_GAP:CODE_SYSTEM] [AE-07]
@@ -409,7 +407,7 @@ CTE_01_MEMBERS AS (
         FROM HEALTHCARE_EHR.conditions c2
         JOIN HEALTHCARE_reference.measure_value_set_codes vsc2
           ON c2.code = vsc2.code
-         AND TRIM(vsc2.value_set_oid) = '2.16.840.1.113883.3.464.1004.1065'
+         AND vsc2.value_set_oid = '2.16.840.1.113883.3.464.1004.1065'
         WHERE c2.patient_id = d.patient_id
           AND c2.code_system = 'SNOMED-CT'
           AND c2.start_date <= DATE '2025-12-31'
@@ -421,10 +419,10 @@ CTE_01_MEMBERS AS (
         FROM HEALTHCARE_EHR.procedures p2
         JOIN HEALTHCARE_reference.measure_value_set_codes vsc3
           ON p2.code = vsc3.code
-         AND TRIM(vsc3.value_set_oid) = '2.16.840.1.113883.3.464.1004.1250'
+         AND vsc3.value_set_oid = '2.16.840.1.113883.3.464.1004.1250'
         WHERE p2.patient_id = d.patient_id
           AND p2.code_system = 'SNOMED-CT'
-          AND CAST(p2.start_ts AT TIME ZONE 'GMT' AS DATE) <= DATE '2025-12-31'
+          AND p2.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00'
     )
 )
 
@@ -433,10 +431,9 @@ CTE_01_MEMBERS AS (
     FROM HEALTHCARE_EHR.procedures pr
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
       ON pr.code = vsc.code
-     AND TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.1064'
+     AND vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.1064'
     WHERE pr.code_system = 'SNOMED-CT'
-      AND CAST(pr.start_ts AT TIME ZONE 'GMT' AS DATE)
-            BETWEEN DATE '2016-01-01' AND DATE '2025-12-31'
+      AND (pr.start_ts >= TIMESTAMP '2016-01-01 00:00:00+00:00' AND pr.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
     -- [Spec2:NUM_COLONOSCOPY:DOMAIN_GAP:CODE_SYSTEM] [AE-05]
 )
 
@@ -445,10 +442,9 @@ CTE_01_MEMBERS AS (
     FROM HEALTHCARE_EHR.procedures pr
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
       ON pr.code = vsc.code
-     AND TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.1102'
+     AND vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.1102'
     WHERE pr.code_system = 'SNOMED-CT'
-      AND CAST(pr.start_ts AT TIME ZONE 'GMT' AS DATE)
-            BETWEEN DATE '2021-01-01' AND DATE '2025-12-31'
+      AND (pr.start_ts >= TIMESTAMP '2021-01-01 00:00:00+00:00' AND pr.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
     -- [Spec2:NUM_SIGMOIDOSCOPY:DOMAIN_GAP:CODE_SYSTEM] [AE-05]
 )
 
@@ -457,10 +453,9 @@ CTE_01_MEMBERS AS (
     FROM HEALTHCARE_EHR.procedures pr
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
       ON pr.code = vsc.code
-     AND TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.1421'
+     AND vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.1421'
     WHERE pr.code_system = 'SNOMED-CT'
-      AND CAST(pr.start_ts AT TIME ZONE 'GMT' AS DATE)
-            BETWEEN DATE '2021-01-01' AND DATE '2025-12-31'
+      AND (pr.start_ts >= TIMESTAMP '2021-01-01 00:00:00+00:00' AND pr.start_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
     -- [Spec2:NUM_CT_COLONOGRAPHY:DOMAIN_GAP:CODE_SYSTEM] [AE-05]
 )
 
@@ -469,9 +464,8 @@ CTE_01_MEMBERS AS (
     FROM HEALTHCARE_EHR.observations ob
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
       ON ob.code = vsc.code
-     AND TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.1959'
-    WHERE CAST(ob.observation_ts AT TIME ZONE 'GMT' AS DATE)
-            BETWEEN DATE '2025-01-01' AND DATE '2025-12-31'
+     AND vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.1959'
+    WHERE (ob.observation_ts >= TIMESTAMP '2025-01-01 00:00:00+00:00' AND ob.observation_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
     -- [Spec2:NUM_FOBT:MAPPED] [AE-05]
 )
 
@@ -480,9 +474,8 @@ CTE_01_MEMBERS AS (
     FROM HEALTHCARE_EHR.observations ob
     JOIN HEALTHCARE_reference.measure_value_set_codes vsc
       ON ob.code = vsc.code
-     AND TRIM(vsc.value_set_oid) = '2.16.840.1.113883.3.464.1004.1749'
-    WHERE CAST(ob.observation_ts AT TIME ZONE 'GMT' AS DATE)
-            BETWEEN DATE '2023-01-01' AND DATE '2025-12-31'
+     AND vsc.value_set_oid = '2.16.840.1.113883.3.464.1004.1749'
+    WHERE (ob.observation_ts >= TIMESTAMP '2023-01-01 00:00:00+00:00' AND ob.observation_ts < TIMESTAMP '2026-01-01 00:00:00+00:00')
     -- [Spec2:NUM_FIT_DNA:MAPPED] [AE-05]
 )
 
@@ -551,11 +544,12 @@ Assemble: certified spine verbatim, then your tail (`, extra_cte AS (...)` and a
 - **The spine is frozen.** Reuse the certified CTEs verbatim through `CTE_05_NUMERATOR`; never modify, rebuild or re-derive eligibility, exclusions, codes or enrollment. Add only a tail (extra CTEs and a final SELECT) that reads from the spine, so every result is a subset or aggregation of the certified population.
 - **Follow the rate model above exactly.** It states which CTE is the denominator and how the numerator flag is formed for this measure.
 - **Enrichment** (a dimension not already on the spine, such as provider, facility or payer): `LEFT JOIN` on the member key, one row per member. Never `INNER JOIN`, and never filter on the joined table, or the denominator changes.
+- **Member attributes in a tail** (age, county, ...): `LEFT JOIN` the base table (e.g. `patients`) on the member key. Do not re-reference `CTE_04_EXCLUSIONS` or another spine CTE just to pick up a column; that re-evaluates the whole exclusion chain a second time.
 - **Names:** use only columns listed in the spine structure and tables you have looked up (e.g. with `base_columnDescription`). Never guess a column; fully qualify tables as `db.table`.
 - **Never invent numbers.** Certified rate, star band and cut points come from this file. Gap-to-next-star math uses only the cut points above.
 - **Questions that redefine the measure** (different age range, codes, enrollment, exclusions) are scenario analysis, not analytics. Say so instead of altering the certified logic.
 - **Reconcile:** an overall rate computed from your tail must equal the certified denominator, numerator and rate.
-- Validate with `EXPLAIN` before running anything large; use `TOP n` while exploring.
+- Validate with `EXPLAIN` before running anything large and check that it reads "N partitions", not "all partitions", on the big tables. Use `TOP n` while exploring."""
 
 Example questions this supports:
 - Rate by age band, gender, race, county or other member attribute on the spine, with the gap to the next star band.
@@ -574,7 +568,7 @@ Example questions this supports:
 ## Teradata notes
 
 - `CASE WHEN EXISTS (...)` is illegal (error 3771). Use a `LEFT JOIN` and test `IS NOT NULL`.
-- `AT TIME ZONE` is valid only on TIMESTAMP columns (`*_ts`): `CAST(col AT TIME ZONE 'GMT' AS DATE)`. DATE columns (`*_date`) compare directly (error 5407).
+- Never wrap a partitioning or filter column in a function. `*_ts` columns are `TIMESTAMP WITH TIME ZONE` and are the RANGE_N partitioning key on the large tables (observations, procedures, ...). `CAST(col AT TIME ZONE 'GMT' AS DATE) BETWEEN d1 AND d2` is legal but non-sargable: it scans every yearly partition. Filter with a half-open timestamp range instead: `col >= TIMESTAMP 'yyyy-mm-dd 00:00:00+00:00' AND col < TIMESTAMP '<day after d2> 00:00:00+00:00'`. Keep `CAST(col AT TIME ZONE 'GMT' AS DATE)` for SELECT lists and grouping only. DATE columns (`*_date`) compare directly to DATE literals; never use `AT TIME ZONE` on a DATE (error 5407).
 - `NTILE` is not supported. Use `CASE WHEN` bands or `QUANTILE(n, col)`.
 - Wrap rate denominators in `NULLIFZERO()`; no `ORDER BY` inside CTEs.
 - Never wrap a join key in `TRIM()` (or any function): it defeats primary-index, row-hash and partition use. Join columns directly. `patient_id` and `encounter_id` are stored trimmed. `TRIM()` is fine on a column compared with a literal (a filter, not a join).
@@ -617,7 +611,7 @@ CODE RESOLUTION — two allowed patterns:
 2. If a value set is too large to inline, JOIN to the codes table by OID + year:
        JOIN HEALTHCARE_reference.measure_value_set_codes vsc
          ON clinical.code = vsc.code
-        AND TRIM(vsc.value_set_oid) = '<value_set_oid from Spec 3>'
+        AND vsc.value_set_oid = '<value_set_oid from Spec 3>'
         AND vsc.measurement_year = <YEAR>
    or resolve every OID for a concept via HEALTHCARE_reference.measure_to_value_set first:
        JOIN HEALTHCARE_reference.measure_to_value_set mt
